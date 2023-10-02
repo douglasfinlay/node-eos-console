@@ -1,0 +1,43 @@
+{
+  "name": "eos-console",
+  "version": "0.0.0",
+  "description": "Library to interface with ETC Eos Family lighting consoles.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf ./lib",
+    "format": "prettier --config .prettierrc 'src/**/*.ts' --write",
+    "lint": "eslint ./src",
+    "lint:fix": "eslint ./src --fix",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/douglasfinlay/node-eos-console.git"
+  },
+  "keywords": [
+    "etc",
+    "eos",
+    "lighting"
+  ],
+  "author": "Douglas Finlay <douglas@douglasfinlay.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/douglasfinlay/node-eos-console/issues"
+  },
+  "homepage": "https://github.com/douglasfinlay/node-eos-console#readme",
+  "devDependencies": {
+    "@types/node": "^18.8.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.3",
+    "@typescript-eslint/parser": "^6.7.3",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "osc-min": "^1.1.2",
+    "slip": "^1.0.2"
+  }
+}
