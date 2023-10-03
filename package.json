@@ -2,10 +2,11 @@
   "name": "eos-console",
   "version": "0.0.0",
   "description": "Library to interface with ETC Eos Family lighting consoles.",
-  "main": "dist/index.js",
+  "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf ./lib",
+    "demo": "ts-node --files demo.ts",
     "format": "prettier --config .prettierrc src/**/*.ts --write",
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
