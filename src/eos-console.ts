@@ -1,4 +1,6 @@
 import { EventEmitter } from 'node:events';
+import { inspect } from 'node:util';
+import { parseImplicitOutput } from './eos-implicit-output';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
 import { Cue } from './record-targets';
 import { expandTargetNumberArguments } from './target-number';
@@ -9,12 +11,6 @@ type RecordTargetUid = string;
 
 const GET_CUE_OSC_ADDRESS =
     /^\/eos\/out\/get\/cue\/1\/(?<cueNumber>\d+|\d+.\d+)/;
-
-const ACTIVE_CUE_OSC_ADDRESS =
-    /^\/eos\/out\/active\/cue\/1\/(?<cueNumber>\d+|\d+.\d+$)/;
-
-const PENDING_CUE_OSC_ADDRESS =
-    /^\/eos\/out\/pending\/cue\/1\/(?<cueNumber>\d+|\d+.\d+$)/;
 
 const CUE_CHANGED_OSC_ADDRESS = /^\/eos\/out\/notify\/cue\/1$/;
 
@@ -243,15 +239,6 @@ export class EosConsole extends EventEmitter {
 
             this.eosVersion = msg.args[0];
             console.log(`EOS version: ${this.eosVersion}`);
-        } else if (msg.address === '/eos/out/show/name') {
-            if (msg.args.length < 1) {
-                console.warn(
-                    `Unexpected argument count for message "${msg.address}" (expect at least 1, got ${msg.args.length})`,
-                );
-                return;
-            }
-
-            this.showName = msg.args[0];
         } else if (msg.address === '/eos/out/get/cue/1/count') {
             if (msg.args.length < 1) {
                 console.warn(
@@ -271,12 +258,6 @@ export class EosConsole extends EventEmitter {
             }
         } else if (GET_CUE_OSC_ADDRESS.test(msg.address)) {
             this.handleCueMessage(msg);
-        } else if (ACTIVE_CUE_OSC_ADDRESS.test(msg.address)) {
-            this.activeCueNumber = msg.address.split('/')[6];
-            this.emit('activeCue', this.activeCueNumber);
-        } else if (PENDING_CUE_OSC_ADDRESS.test(msg.address)) {
-            this.pendingCueNumber = msg.address.split('/')[6];
-            this.emit('pendingCue', this.pendingCueNumber);
         } else if (CUE_CHANGED_OSC_ADDRESS.test(msg.address)) {
             const changedTargets = expandTargetNumberArguments(
                 msg.args.slice(1),
@@ -289,6 +270,24 @@ export class EosConsole extends EventEmitter {
                 };
 
                 this.socket?.writeOsc(getCueMsg);
+            }
+        } else {
+            const implicitOutput = parseImplicitOutput(msg);
+
+            if (implicitOutput) {
+                switch (implicitOutput.kind) {
+                    case 'show-name':
+                        this.showName = implicitOutput.data;
+                        break;
+                    case 'active-cue':
+                        this.activeCueNumber = implicitOutput.data;
+                        break;
+                    case 'pending-cue':
+                        this.pendingCueNumber = implicitOutput.data;
+                        break;
+                }
+
+                this.emit(implicitOutput.kind, implicitOutput.data);
             }
         }
 
@@ -408,5 +407,12 @@ export class EosConsole extends EventEmitter {
         }
 
         this.emit(updating ? 'cueUpdate' : 'cueCreate', cue);
+    }
+
+    // FIXME: this only exists to allow some quick and dirty testing!
+    emit(eventName: string | symbol, ...args: unknown[]): boolean {
+        console.log(`Event: ${String(eventName)} ${inspect(args)}`);
+
+        return super.emit(eventName, ...args);
     }
 }
