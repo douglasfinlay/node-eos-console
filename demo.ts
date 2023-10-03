@@ -4,4 +4,5 @@ import { EosConsole } from './src/eos-console';
     const eos = new EosConsole('localhost');
 
     await eos.connect();
+    await eos.changeUser(1);
 })();

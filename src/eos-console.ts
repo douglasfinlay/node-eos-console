@@ -101,11 +101,6 @@ export class EosConsole extends EventEmitter {
             this.emit('connect');
 
             this.socket?.writeOsc({
-                address: '/eos/user',
-                args: [0],
-            });
-
-            this.socket?.writeOsc({
                 address: '/eos/get/version',
                 args: [],
             });
@@ -130,6 +125,13 @@ export class EosConsole extends EventEmitter {
         console.log('Disconnecting from EOS console');
 
         this.socket?.destroy();
+    }
+
+    async changeUser(userId: number) {
+        await this.socket?.writeOsc({
+            address: '/eos/user',
+            args: [userId],
+        });
     }
 
     executeCommand(
