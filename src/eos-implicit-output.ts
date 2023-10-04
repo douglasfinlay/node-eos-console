@@ -1,5 +1,12 @@
 import { EosOscMessage } from './eos-osc-stream';
-import { EosState } from './eos-types';
+import {
+    EosColorHueSat,
+    EosFocusPanTilt,
+    EosFocusXYZ,
+    EosState,
+    EosWheelCategory,
+} from './eos-types';
+import { expandTargetNumberArguments } from './target-number';
 
 export type EosImplicitOutput =
     | EosCmdOutput
@@ -15,7 +22,12 @@ export type EosImplicitOutput =
     | EosPreviousCueTextOutput
     | EosActiveCuePercentOutput
     | EosStateOutput
-    | EosLockedOutput;
+    | EosLockedOutput
+    | EosColorHueSatOutput
+    | EosFocusPanTiltOutput
+    | EosFocusXYZOutput
+    | EosActiveWheelOutput
+    | EosActiveChannelOutput;
 
 type EosUserOutput = {
     kind: 'user';
@@ -102,9 +114,39 @@ type EosLockedOutput = {
     data: boolean;
 };
 
-const USER_CMD_ADDRESS = /^\/eos\/out\/user\/(?<userId>\d+)\/cmd$/;
+type EosColorHueSatOutput = {
+    kind: 'color-hs';
+    data: EosColorHueSat | null;
+};
 
-const SOFTKEY_ADDRESS = /^\/eos\/out\/softkey\/(?<softkey>\d+)$/;
+type EosFocusPanTiltOutput = {
+    kind: 'focus-pan-tilt';
+    data: EosFocusPanTilt | null;
+};
+
+type EosFocusXYZOutput = {
+    kind: 'focus-xyz';
+    data: EosFocusXYZ | null;
+};
+
+type EosActiveWheelOutput = {
+    kind: 'active-wheel';
+    data: {
+        category: EosWheelCategory;
+        parameter: string;
+        value: number;
+        wheelNumber: number;
+    };
+};
+
+type EosActiveChannelOutput = {
+    kind: 'active-channel';
+    data: string[];
+};
+
+const USER_CMD_OSC_ADDRESS = /^\/eos\/out\/user\/(?<userId>\d+)\/cmd$/;
+
+const SOFTKEY_OSC_ADDRESS = /^\/eos\/out\/softkey\/(?<softkey>\d+)$/;
 
 const ACTIVE_CUE_OSC_ADDRESS =
     /^\/eos\/out\/active\/cue\/(?<cueList>\d+)\/(?<cueNumber>\d+|\d+.\d+$)/;
@@ -115,12 +157,57 @@ const PENDING_CUE_OSC_ADDRESS =
 const PREVIOUS_CUE_OSC_ADDRESS =
     /^\/eos\/out\/previous\/cue\/(?<cueList>\d+)\/(?<cueNumber>\d+|\d+.\d+$)/;
 
+const ACTIVE_WHEEL_OSC_ADDRESS =
+    /^\/eos\/out\/active\/wheel\/(?<wheelNumber>\d+)$/;
+
 export function parseImplicitOutput(
     message: EosOscMessage,
 ): EosImplicitOutput | null {
     let result: EosImplicitOutput | null = null;
 
-    if (message.address === '/eos/out/event/locked') {
+    if (message.address === '/eos/out/color/hs') {
+        result = {
+            kind: 'color-hs',
+            data:
+                message.args.length === 2
+                    ? {
+                          hue: Number(message.args[0]),
+                          saturation: Number(message.args[1]),
+                      }
+                    : null,
+        };
+    } else if (message.address === '/eos/out/pantilt') {
+        result = {
+            kind: 'focus-pan-tilt',
+            data:
+                message.args.length === 6
+                    ? {
+                          panRange: [
+                              Number(message.args[0]),
+                              Number(message.args[1]),
+                          ],
+                          tiltRange: [
+                              Number(message.args[2]),
+                              Number(message.args[3]),
+                          ],
+                          pan: Number(message.args[4]),
+                          tilt: Number(message.args[5]),
+                      }
+                    : null,
+        };
+    } else if (message.address === '/eos/out/xyz') {
+        result = {
+            kind: 'focus-xyz',
+            data:
+                message.args.length === 3
+                    ? {
+                          x: Number(message.args[0]),
+                          y: Number(message.args[1]),
+                          z: Number(message.args[2]),
+                      }
+                    : null,
+        };
+    } else if (message.address === '/eos/out/event/locked') {
         result = {
             kind: 'locked',
             data: !!message.args[0],
@@ -160,7 +247,7 @@ export function parseImplicitOutput(
             kind: 'cmd',
             data: message.args[0],
         };
-    } else if (USER_CMD_ADDRESS.test(message.address)) {
+    } else if (USER_CMD_OSC_ADDRESS.test(message.address)) {
         result = {
             kind: 'user-cmd',
             data: {
@@ -168,7 +255,7 @@ export function parseImplicitOutput(
                 cmd: message.args[0],
             },
         };
-    } else if (SOFTKEY_ADDRESS.test(message.address)) {
+    } else if (SOFTKEY_OSC_ADDRESS.test(message.address)) {
         result = {
             kind: 'softkey',
             data: {
@@ -204,6 +291,36 @@ export function parseImplicitOutput(
                 cueList: Number(message.address.split('/')[5]),
                 cueNumber: message.address.split('/')[6],
             },
+        };
+    } else if (ACTIVE_WHEEL_OSC_ADDRESS.test(message.address)) {
+        // Remove the "current value" text in square brackets
+        let parameter = message.args[0] as string;
+        const i = parameter.lastIndexOf('[');
+        parameter = parameter.substring(0, i).trimEnd();
+
+        result = {
+            kind: 'active-wheel',
+            data: {
+                wheelNumber: Number(message.address.split('/')[5]),
+                parameter,
+                category: Number(message.args[1]),
+                value: Number(message.args[2]),
+            },
+        };
+    } else if (message.address === '/eos/out/active/chan') {
+        const rawChannels = message.args[0] as string;
+        const i = rawChannels.indexOf(' ');
+
+        const channels = expandTargetNumberArguments(
+            rawChannels
+                .substring(0, i)
+                .split(',')
+                .filter(x => x.length),
+        );
+
+        result = {
+            kind: 'active-channel',
+            data: channels,
         };
     } else {
         console.warn(`Unrecognised implicit output:`, message);
