@@ -61,6 +61,7 @@ export interface CueList extends RecordTarget {
     assert: boolean;
     background: boolean;
     block: boolean;
+    cueListNumber: number;
     faderMode: string;
     htp: boolean;
     independent: boolean;

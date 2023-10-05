@@ -42,6 +42,7 @@ export function unpackCue(messages: EosOscMessage[]): Cue {
 export function unpackCueList(messages: EosOscMessage[]): CueList {
     return {
         ...unpackBaseRecordTarget(messages[0]),
+        cueListNumber: Number(messages[0].address.split('/')[5]),
         playbackMode: messages[0].args[3],
         faderMode: messages[0].args[4],
         independent: messages[0].args[5],
