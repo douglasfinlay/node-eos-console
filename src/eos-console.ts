@@ -2,11 +2,15 @@ import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
 import { parseImplicitOutput } from './eos-implicit-output';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
-import { Cue } from './record-targets';
+import { RecordTargetType } from './record-targets';
+import {
+    unpackCue,
+    unpackCueList,
+    unpackGroup,
+    unpackMacro,
+} from './osc-record-target-parser';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
-
-type RecordTargetUid = string;
 
 class Deferred<T = unknown> {
     resolve!: (value: T) => void;
@@ -26,9 +30,6 @@ export class EosConsole extends EventEmitter {
 
     private eosVersion: string | null = null;
     private showName: string | null = null;
-
-    private cuesByRecordTargetUid = new Map<RecordTargetUid, Cue>();
-    private recordTargetUidByCueNumber = new Map<string, RecordTargetUid>();
 
     constructor(
         public readonly host: string,
@@ -112,27 +113,6 @@ export class EosConsole extends EventEmitter {
         return response.args[0] as string;
     }
 
-    async getCueCount(cueList: number) {
-        const response = await this.request({
-            address: `/eos/get/cue/${cueList}/count`,
-            args: [],
-        });
-
-        return response.args[0] as number;
-    }
-
-    async getCue(cueList: number, index: number) {
-        const responses = await this.requestMultiple(
-            {
-                address: `/eos/get/cue/${cueList}/index/${index}`,
-                args: [],
-            },
-            4,
-        );
-
-        console.log(responses);
-    }
-
     async changeUser(userId: number) {
         await this.socket?.writeOsc({
             address: '/eos/user',
@@ -162,10 +142,6 @@ export class EosConsole extends EventEmitter {
         this.socket?.writeOsc(msg);
     }
 
-    // getCues(): Cue[] {
-    //     return Array.from(this.cuesByRecordTargetUid.values());
-    // }
-
     get consoleConnectionState(): EosConnectionState {
         return this.connectionState;
     }
@@ -178,29 +154,118 @@ export class EosConsole extends EventEmitter {
         return this.showName;
     }
 
+    async getCues(cueList: number) {
+        const count = await this.getRecordTargetListCount('cue', { cueList });
+        const requests = new Array(count);
+
+        for (let i = 0; i < count; i++) {
+            requests[i] = this.requestMultiple(
+                {
+                    address: `/eos/get/cue/${cueList}/index/${i}`,
+                    args: [],
+                },
+                4,
+            );
+        }
+
+        const responses = await Promise.all(requests);
+
+        return responses.map(unpackCue);
+    }
+
+    async getCueLists() {
+        const count = await this.getRecordTargetListCount('cuelist');
+        const requests = new Array(count);
+
+        for (let i = 0; i < count; i++) {
+            requests[i] = this.requestMultiple(
+                {
+                    address: `/eos/get/cuelist/index/${i}`,
+                    args: [],
+                },
+                2,
+            );
+        }
+
+        const responses = await Promise.all(requests);
+
+        return responses.map(unpackCueList);
+    }
+
+    async getGroups() {
+        const count = await this.getRecordTargetListCount('group');
+        const requests = new Array(count);
+
+        for (let i = 0; i < count; i++) {
+            requests[i] = this.requestMultiple(
+                {
+                    address: `/eos/get/group/index/${i}`,
+                    args: [],
+                },
+                2,
+            );
+        }
+
+        const responses = await Promise.all(requests);
+
+        return responses.map(unpackGroup);
+    }
+
+    async getMacros() {
+        const count = await this.getRecordTargetListCount('macro');
+        const requests = new Array(count);
+
+        for (let i = 0; i < count; i++) {
+            requests[i] = this.requestMultiple(
+                {
+                    address: `/eos/get/macro/index/${i}`,
+                    args: [],
+                },
+                2,
+            );
+        }
+
+        const responses = await Promise.all(requests);
+
+        return responses.map(unpackMacro);
+    }
+
+    /**
+     * Note:
+     *   - if target type doesn't exist, Eos will simply not reply and the request will fail to resolve
+     *   - if a cue list doesn't exist, Eos will reply with 0
+     */
+    private async getRecordTargetListCount(
+        targetType: RecordTargetType,
+        options?: { cueList: number },
+    ): Promise<number> {
+        let address: string;
+
+        if (targetType === 'cue') {
+            address = `/eos/get/cue/${options!.cueList}/count`;
+        } else {
+            address = `/eos/get/${targetType}/count`;
+        }
+
+        const response = await this.request({
+            address,
+            args: [],
+        });
+
+        return response.args[0] as number;
+    }
+
     private handleOscMessage(msg: EosOscMessage) {
         // console.debug('OSC message:', msg);
 
         if (msg.address.startsWith('/eos/out/get/')) {
-            // Explicit reply to a request, route to request manager
-
             const deferred = this.inflightRequests.shift();
+
             if (!deferred) {
                 throw new Error('unsolicited /eos/out/get response');
             }
 
             deferred.resolve(msg);
-
-            // if (msg.address === '/eos/out/get/cue/1/count') {
-            //     if (msg.args.length < 1) {
-            //         console.warn(
-            //             `Unexpected argument count for message "${msg.address}" (expect at least 1, got ${msg.args.length})`,
-            //         );
-            //         return;
-            //     }
-            // } else if (GET_CUE_OSC_ADDRESS.test(msg.address)) {
-            //     this.handleCueMessage(msg);
-            // }
         } else if (msg.address.startsWith('/eos/out/notify/')) {
             // Show data change events (following /eos/subscribe = 1)
             // if (CUE_CHANGED_OSC_ADDRESS.test(msg.address)) {
@@ -235,8 +300,7 @@ export class EosConsole extends EventEmitter {
                 this.emit(implicitOutput.kind, implicitOutput.data);
             }
         } else {
-            // Arbitrary output
-            console.debug('OSC message:', msg);
+            console.debug('Explicit output:', msg);
         }
     }
 
@@ -265,107 +329,6 @@ export class EosConsole extends EventEmitter {
 
         return Promise.all(awaiters.map(a => a.promise));
     }
-
-    // private handleCueMessage(msg: EosOscMessage) {
-    //     // Address: /eos/out/get/cue/<cue list number>/<cue number>/<cue part number>
-    //     //
-    //     // Arguments:
-    //     //      0: <uint32: index>
-    //     //      1: <string: OSC UID>
-    //     //      2: <string: label>
-    //     //      3: <uint32: up time duration (ms)>
-    //     //      4: <uint32: up time delay (ms)>
-    //     //      5: <uint32: down time duration (ms)>
-    //     //      6: <uint32: down time delay (ms)>
-    //     //      7: <uint32: focus time duration (ms)>
-    //     //      8: <uint32: focus time delay (ms)>
-    //     //      9: <uint32: color time duration (ms)>
-    //     //     10: <uint32: color time delay (ms)>
-    //     //     11: <uint32: beam time duration (ms)>
-    //     //     12: <uint32: beam time delay (ms)>
-    //     //     13: <bool: preheat>
-    //     //     14: <OSC Number: curve>
-    //     //     15: <uint32: rate>
-    //     //     16: <string: mark>
-    //     //     17: <string: block>
-    //     //     18: <string: assert>
-    //     //     19: <OSC Number: link> or <string: link> (string if links to a separate cue list)
-    //     //     20: <uint32: follow time (ms)>
-    //     //     21: <uint32: hang time (ms)>
-    //     //     22: <bool: all fade>
-    //     //     23: <uint32: loop>
-    //     //     24: <bool: solo>
-    //     //     25: <string: timecode>
-    //     //     26: <uint32: part count> (not including base cue, so zero for cues with no parts)
-    //     //     27: <notes>
-    //     //     28: <scene (text)>
-    //     //     29: <bool: scene end>
-    //     //     30: <cue part index> (-1 if not a part of a cue, the index otherwise)
-
-    //     const addressParts = msg.address.split('/');
-
-    //     // We don't care about cue actions, fx, links
-    //     if (addressParts.length > 8) {
-    //         return;
-    //     }
-
-    //     const args = msg.args;
-
-    //     const uid = args[1];
-    //     const cueNumber = addressParts[6];
-
-    //     if (!uid) {
-    //         // Cue no longer exists on the console; find our copy and delete it
-    //         const deletedCueUid =
-    //             this.recordTargetUidByCueNumber.get(cueNumber);
-
-    //         if (deletedCueUid) {
-    //             this.recordTargetUidByCueNumber.delete(cueNumber);
-    //             const deletedCue =
-    //                 this.cuesByRecordTargetUid.get(deletedCueUid)!;
-    //             this.cuesByRecordTargetUid.delete(deletedCueUid);
-
-    //             this.emit('cueDelete', deletedCue);
-    //         }
-
-    //         return;
-    //     }
-
-    //     // At this point the cue was either added or updated
-
-    //     if (args.length < 31) {
-    //         console.error(
-    //             `Cannot process cue message arguments (expect at least 31, got ${msg.args.length})`,
-    //         );
-    //         return;
-    //     }
-
-    //     const isPart = args[30] >= 0;
-
-    //     // TODO: handle cue parts
-    //     if (isPart) {
-    //         return;
-    //     }
-
-    //     const cue: Cue = {
-    //         cueListNumber: Number(addressParts[5]),
-    //         cueNumber,
-    //         cuePartNumber: Number(addressParts[7]),
-    //         isPart,
-    //         isSceneEnd: !!args[29],
-    //         label: args[2],
-    //         notes: args[27],
-    //         scene: args[28],
-    //         uid,
-    //     };
-
-    //     const updating = this.cuesByRecordTargetUid.has(uid);
-
-    //     this.cuesByRecordTargetUid.set(uid, cue);
-    //     this.recordTargetUidByCueNumber.set(cueNumber, uid);
-
-    //     this.emit(updating ? 'cueUpdate' : 'cueCreate', cue);
-    // }
 
     // FIXME: this only exists to allow some quick and dirty testing!
     emit(eventName: string | symbol, ...args: unknown[]): boolean {
