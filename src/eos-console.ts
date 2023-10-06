@@ -9,24 +9,15 @@ import {
     unpackGroup,
     unpackMacro,
 } from './osc-record-target-parser';
+import { RequestManager } from './request-manager';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
-
-class Deferred<T = unknown> {
-    resolve!: (value: T) => void;
-    reject!: (reason?: Error) => void;
-
-    promise = new Promise<T>((resolve, reject) => {
-        this.resolve = resolve;
-        this.reject = reject;
-    });
-}
 
 export class EosConsole extends EventEmitter {
     private socket: EosOscStream | null = null;
     private connectionState: EosConnectionState = 'disconnected';
 
-    private inflightRequests: Deferred<EosOscMessage>[] = [];
+    private requestManager = new RequestManager();
 
     private eosVersion: string | null = null;
     private showName: string | null = null;
@@ -99,9 +90,7 @@ export class EosConsole extends EventEmitter {
 
         this.socket?.destroy();
 
-        for (const deferred of this.inflightRequests) {
-            deferred.reject(new Error('connection closed'));
-        }
+        this.requestManager.cancelAll(new Error('connection closed'));
     }
 
     async getVersion() {
@@ -110,7 +99,7 @@ export class EosConsole extends EventEmitter {
             args: [],
         });
 
-        return response.args[0] as string;
+        return response[0].args[0] as string;
     }
 
     async changeUser(userId: number) {
@@ -159,11 +148,12 @@ export class EosConsole extends EventEmitter {
         const requests = new Array(count);
 
         for (let i = 0; i < count; i++) {
-            requests[i] = this.requestMultiple(
+            requests[i] = this.request(
                 {
                     address: `/eos/get/cue/${cueList}/index/${i}`,
                     args: [],
                 },
+                true,
                 4,
             );
         }
@@ -173,16 +163,36 @@ export class EosConsole extends EventEmitter {
         return responses.map(unpackCue);
     }
 
+    async getCueList(listNumber: number) {
+        const responses = await this.request(
+            {
+                address: `/eos/get/cuelist/${listNumber}`,
+                args: [],
+            },
+            true,
+            2,
+        );
+
+        console.log(responses);
+
+        if (responses[0].args[1] === undefined) {
+            return null;
+        }
+
+        return unpackCueList(responses);
+    }
+
     async getCueLists() {
         const count = await this.getRecordTargetListCount('cuelist');
         const requests = new Array(count);
 
         for (let i = 0; i < count; i++) {
-            requests[i] = this.requestMultiple(
+            requests[i] = this.request(
                 {
                     address: `/eos/get/cuelist/index/${i}`,
                     args: [],
                 },
+                true,
                 2,
             );
         }
@@ -197,11 +207,12 @@ export class EosConsole extends EventEmitter {
         const requests = new Array(count);
 
         for (let i = 0; i < count; i++) {
-            requests[i] = this.requestMultiple(
+            requests[i] = this.request(
                 {
                     address: `/eos/get/group/index/${i}`,
                     args: [],
                 },
+                true,
                 2,
             );
         }
@@ -216,11 +227,12 @@ export class EosConsole extends EventEmitter {
         const requests = new Array(count);
 
         for (let i = 0; i < count; i++) {
-            requests[i] = this.requestMultiple(
+            requests[i] = this.request(
                 {
                     address: `/eos/get/macro/index/${i}`,
                     args: [],
                 },
+                true,
                 2,
             );
         }
@@ -252,20 +264,14 @@ export class EosConsole extends EventEmitter {
             args: [],
         });
 
-        return response.args[0] as number;
+        return response[0].args[0] as number;
     }
 
     private handleOscMessage(msg: EosOscMessage) {
         // console.debug('OSC message:', msg);
 
         if (msg.address.startsWith('/eos/out/get/')) {
-            const deferred = this.inflightRequests.shift();
-
-            if (!deferred) {
-                throw new Error('unsolicited /eos/out/get response');
-            }
-
-            deferred.resolve(msg);
+            this.requestManager.handleResponse(msg);
         } else if (msg.address.startsWith('/eos/out/notify/')) {
             // Show data change events (following /eos/subscribe = 1)
             // if (CUE_CHANGED_OSC_ADDRESS.test(msg.address)) {
@@ -308,26 +314,20 @@ export class EosConsole extends EventEmitter {
         console.error('OSC connection error:', err);
     }
 
-    private async request(msg: EosOscMessage) {
-        const awaiter = new Deferred<EosOscMessage>();
+    private async request(
+        msg: EosOscMessage,
+        isRecordTarget = false,
+        expectedResponseCount = 1,
+    ) {
+        const response = this.requestManager.register(
+            msg,
+            isRecordTarget,
+            expectedResponseCount,
+        );
 
-        this.inflightRequests.push(awaiter);
         await this.socket?.writeOsc(msg);
 
-        return awaiter.promise;
-    }
-
-    private async requestMultiple(msg: EosOscMessage, responseCount: number) {
-        const awaiters: Deferred<EosOscMessage>[] = [];
-
-        for (let i = 0; i < responseCount; i++) {
-            awaiters.push(new Deferred<EosOscMessage>());
-        }
-
-        this.inflightRequests.push(...awaiters);
-        await this.socket?.writeOsc(msg);
-
-        return Promise.all(awaiters.map(a => a.promise));
+        return response;
     }
 
     // FIXME: this only exists to allow some quick and dirty testing!
