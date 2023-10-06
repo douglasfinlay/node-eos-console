@@ -4,7 +4,9 @@ export class RequestManager {
     private inflightRequests: InflightRequest[] = [];
 
     cancelAll(reason: Error) {
-        this.inflightRequests.forEach(r => r.completer.reject(reason));
+        this.inflightRequests.forEach(r => {
+            r.completer.reject(reason);
+        });
     }
 
     handleResponse(msg: EosOscMessage) {
@@ -48,7 +50,7 @@ export class RequestManager {
         return completer.promise;
     }
 
-    get currentRequest(): InflightRequest | undefined {
+    private get currentRequest(): InflightRequest | undefined {
         return this.inflightRequests[0];
     }
 }
@@ -63,10 +65,10 @@ class Deferred<T = unknown> {
     });
 }
 
-type InflightRequest = {
+interface InflightRequest {
     address: string;
     collectedResponses: EosOscMessage[];
     completer: Deferred<EosOscMessage[]>;
     expectedResponseCount: number;
     isRecordTarget: boolean;
-};
+}

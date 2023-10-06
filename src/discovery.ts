@@ -4,15 +4,15 @@ import * as os from 'node:os';
 
 import * as osc from 'osc-min';
 
-export type EtcDiscoveredDevice = {
+export interface EtcDiscoveredDevice {
     host: string;
     name: string;
     port: number;
     uid: string;
     version: string;
-};
+}
 
-export type EtcDiscoveryOptions = {
+export interface EtcDiscoveryOptions {
     /**
      * @default 3000
      */
@@ -27,7 +27,7 @@ export type EtcDiscoveryOptions = {
      * @default 'ETC Discovery (Node.js)'
      */
     serviceName?: string;
-};
+}
 
 export class EtcDiscovery extends EventEmitter {
     private devicesLastSeen = new Map<string, number>();

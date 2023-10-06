@@ -11,10 +11,10 @@ const EOS_OSC_LIST_ADDRESS = /\/list\/(\d+)\/(\d+)$/;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type EosOscArg = any;
 
-export type EosOscMessage = {
+export interface EosOscMessage {
     address: string;
     args: EosOscArg[];
-};
+}
 
 /**
  * A SLIP-encoded OSC message stream.

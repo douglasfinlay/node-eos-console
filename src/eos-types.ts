@@ -13,20 +13,20 @@ export enum EosWheelCategory {
     SHUTTER = 6,
 }
 
-export type EosFocusPanTilt = {
+export interface EosFocusPanTilt {
     pan: number;
     panRange: [number, number];
     tilt: number;
     tiltRange: [number, number];
-};
+}
 
-export type EosFocusXYZ = {
+export interface EosFocusXYZ {
     x: number;
     y: number;
     z: number;
-};
+}
 
-export type EosColorHueSat = {
+export interface EosColorHueSat {
     hue: number;
     saturation: number;
-};
+}

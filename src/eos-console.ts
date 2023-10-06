@@ -373,7 +373,11 @@ export class EosConsole extends EventEmitter {
         let address: string;
 
         if (targetType === 'cue') {
-            address = `/eos/get/cue/${options!.cueList}/count`;
+            if (!options?.cueList) {
+                throw new TypeError('options.cueList must be provided');
+            }
+
+            address = `/eos/get/cue/${options.cueList}/count`;
         } else {
             address = `/eos/get/${targetType}/count`;
         }

@@ -29,107 +29,107 @@ export type EosImplicitOutput =
     | EosActiveWheelOutput
     | EosActiveChannelOutput;
 
-type EosUserOutput = {
+interface EosUserOutput {
     kind: 'user';
     data: number;
-};
+}
 
-type EosCmdOutput = {
+interface EosCmdOutput {
     kind: 'cmd';
     data: string;
-};
+}
 
-type EosUserCmdOutput = {
+interface EosUserCmdOutput {
     kind: 'user-cmd';
     data: {
         userId: number;
         cmd: string;
     };
-};
+}
 
-type EosShowNameOutput = {
+interface EosShowNameOutput {
     kind: 'show-name';
     data: string;
-};
+}
 
-type EosActiveCueOutput = {
+interface EosActiveCueOutput {
     kind: 'active-cue';
     data: {
         cueList: number;
         cueNumber: string;
     };
-};
+}
 
-type EosPendingCueOutput = {
+interface EosPendingCueOutput {
     kind: 'pending-cue';
     data: {
         cueList: number;
         cueNumber: string;
     };
-};
+}
 
-type EosPreviousCueOutput = {
+interface EosPreviousCueOutput {
     kind: 'previous-cue';
     data: {
         cueList: number;
         cueNumber: string;
     };
-};
+}
 
-type EosSoftkeyOutput = {
+interface EosSoftkeyOutput {
     kind: 'softkey';
     data: {
         softkey: number;
         label: string;
     };
-};
+}
 
-type EosActiveCueTextOutput = {
+interface EosActiveCueTextOutput {
     kind: 'active-cue-text';
     data: string;
-};
+}
 
-type EosPendingCueTextOutput = {
+interface EosPendingCueTextOutput {
     kind: 'pending-cue-text';
     data: string;
-};
+}
 
-type EosPreviousCueTextOutput = {
+interface EosPreviousCueTextOutput {
     kind: 'previous-cue-text';
     data: string;
-};
+}
 
-type EosActiveCuePercentOutput = {
+interface EosActiveCuePercentOutput {
     kind: 'active-cue-percent';
     data: number;
-};
+}
 
-type EosStateOutput = {
+interface EosStateOutput {
     kind: 'state';
     data: EosState;
-};
+}
 
-type EosLockedOutput = {
+interface EosLockedOutput {
     kind: 'locked';
     data: boolean;
-};
+}
 
-type EosColorHueSatOutput = {
+interface EosColorHueSatOutput {
     kind: 'color-hs';
     data: EosColorHueSat | null;
-};
+}
 
-type EosFocusPanTiltOutput = {
+interface EosFocusPanTiltOutput {
     kind: 'focus-pan-tilt';
     data: EosFocusPanTilt | null;
-};
+}
 
-type EosFocusXYZOutput = {
+interface EosFocusXYZOutput {
     kind: 'focus-xyz';
     data: EosFocusXYZ | null;
-};
+}
 
-type EosActiveWheelOutput = {
+interface EosActiveWheelOutput {
     kind: 'active-wheel';
     data: {
         category: EosWheelCategory;
@@ -137,12 +137,12 @@ type EosActiveWheelOutput = {
         value: number;
         wheelNumber: number;
     };
-};
+}
 
-type EosActiveChannelOutput = {
+interface EosActiveChannelOutput {
     kind: 'active-channel';
     data: string[];
-};
+}
 
 const USER_CMD_OSC_ADDRESS = /^\/eos\/out\/user\/(?<userId>\d+)\/cmd$/;
 
