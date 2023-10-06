@@ -2,13 +2,13 @@ import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
 import { parseImplicitOutput } from './eos-implicit-output';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
-import { RecordTargetType } from './record-targets';
 import {
     unpackCue,
     unpackCueList,
     unpackGroup,
     unpackMacro,
 } from './osc-record-target-parser';
+import { RecordTargetType } from './record-targets';
 import { RequestManager } from './request-manager';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
@@ -27,6 +27,10 @@ export class EosConsole extends EventEmitter {
         public readonly port = 3037,
     ) {
         super();
+    }
+
+    get consoleConnectionState(): EosConnectionState {
+        return this.connectionState;
     }
 
     async connect(timeout = 5000) {
@@ -131,16 +135,16 @@ export class EosConsole extends EventEmitter {
         this.socket?.writeOsc(msg);
     }
 
-    get consoleConnectionState(): EosConnectionState {
-        return this.connectionState;
-    }
-
     getShowName(): string | undefined {
         if (!this.showName) {
             return;
         }
 
         return this.showName;
+    }
+
+    getCue(cueList: number, targetNumber: string): never {
+        throw new Error('not implemented');
     }
 
     async getCues(cueList: number) {
@@ -163,10 +167,10 @@ export class EosConsole extends EventEmitter {
         return responses.map(unpackCue);
     }
 
-    async getCueList(listNumber: number) {
+    async getCueList(cueList: number) {
         const responses = await this.request(
             {
-                address: `/eos/get/cuelist/${listNumber}`,
+                address: `/eos/get/cuelist/${cueList}`,
                 args: [],
             },
             true,
@@ -202,6 +206,18 @@ export class EosConsole extends EventEmitter {
         return responses.map(unpackCueList);
     }
 
+    getCurve(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getCurves(): never {
+        throw new Error('not implemented');
+    }
+
+    getGroup(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
     async getGroups() {
         const count = await this.getRecordTargetListCount('group');
         const requests = new Array(count);
@@ -222,6 +238,18 @@ export class EosConsole extends EventEmitter {
         return responses.map(unpackGroup);
     }
 
+    getEffect(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getEffects(): never {
+        throw new Error('not implemented');
+    }
+
+    getMacro(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
     async getMacros() {
         const count = await this.getRecordTargetListCount('macro');
         const requests = new Array(count);
@@ -240,6 +268,97 @@ export class EosConsole extends EventEmitter {
         const responses = await Promise.all(requests);
 
         return responses.map(unpackMacro);
+    }
+
+    getMagicSheet(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getMagicSheets(): never {
+        throw new Error('not implemented');
+    }
+
+    getPatchEntry(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getPatch(): never {
+        throw new Error('not implemented');
+    }
+
+    getPreset(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getPresets(): never {
+        throw new Error('not implemented');
+    }
+
+    getIntensityPalette(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getIntensityPalettes(): never {
+        throw new Error('not implemented');
+    }
+
+    getFocusPalette(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getFocusPalettes(): never {
+        throw new Error('not implemented');
+    }
+
+    getColorPalette(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getColorPalettes(): never {
+        throw new Error('not implemented');
+    }
+
+    getBeamPalette(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getBeamPalettes(): never {
+        throw new Error('not implemented');
+    }
+
+    getPixmap(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getPixmaps(): never {
+        throw new Error('not implemented');
+    }
+
+    getSnapshot(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getSnapshots(): never {
+        throw new Error('not implemented');
+    }
+
+    getSubmaster(targetNumber: string): never {
+        throw new Error('not implemented');
+    }
+
+    getSubmasters(): never {
+        throw new Error('not implemented');
+    }
+
+    // FIXME: this only exists to allow some quick and dirty testing!
+    emit(eventName: string | symbol, ...args: unknown[]): boolean {
+        console.log(
+            `Event: ${String(eventName)} - ${args
+                .map(a => inspect(a))
+                .join(', ')}`,
+        );
+
+        return super.emit(eventName, ...args);
     }
 
     /**
@@ -328,16 +447,5 @@ export class EosConsole extends EventEmitter {
         await this.socket?.writeOsc(msg);
 
         return response;
-    }
-
-    // FIXME: this only exists to allow some quick and dirty testing!
-    emit(eventName: string | symbol, ...args: unknown[]): boolean {
-        console.log(
-            `Event: ${String(eventName)} - ${args
-                .map(a => inspect(a))
-                .join(', ')}`,
-        );
-
-        return super.emit(eventName, ...args);
     }
 }
