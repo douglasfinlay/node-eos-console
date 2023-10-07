@@ -4,6 +4,7 @@ import { expandTargetNumberArguments } from './target-number';
 
 export function unpackCue(messages: EosOscMessage[]): Cue {
     return {
+        targetType: 'cue',
         ...unpackBaseRecordTarget(messages[0]),
         upTimeDurationMs: messages[0].args[3],
         upTimeDelayMs: messages[0].args[4],
@@ -41,6 +42,7 @@ export function unpackCue(messages: EosOscMessage[]): Cue {
 
 export function unpackCueList(messages: EosOscMessage[]): CueList {
     return {
+        targetType: 'cuelist',
         ...unpackBaseRecordTarget(messages[0]),
         cueListNumber: Number(messages[0].address.split('/')[5]),
         playbackMode: messages[0].args[3],
@@ -59,6 +61,7 @@ export function unpackCueList(messages: EosOscMessage[]): CueList {
 
 export function unpackGroup(messages: EosOscMessage[]): Group {
     return {
+        targetType: 'group',
         ...unpackBaseRecordTarget(messages[0]),
         groupNumber: messages[0].address.split('/')[5],
         channels: expandTargetNumberArguments(messages[1].args.slice(2)),
@@ -67,14 +70,17 @@ export function unpackGroup(messages: EosOscMessage[]): Group {
 
 export function unpackMacro(messages: EosOscMessage[]): Macro {
     return {
+        targetType: 'macro',
         ...unpackBaseRecordTarget(messages[0]),
-        macroNumber: messages[0].address.split('/')[4],
+        macroNumber: messages[0].address.split('/')[5],
         mode: messages[0].args[3],
         command: messages[1].args.slice(2).join(''),
     };
 }
 
-function unpackBaseRecordTarget(message: EosOscMessage): RecordTarget {
+function unpackBaseRecordTarget(
+    message: EosOscMessage,
+): Omit<RecordTarget, 'targetType'> {
     return {
         uid: message.args[1],
         label: message.args[2],
