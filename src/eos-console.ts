@@ -10,6 +10,7 @@ import {
 } from './osc-record-target-parser';
 import { RecordTargetType } from './record-targets';
 import { RequestManager } from './request-manager';
+import { expandTargetNumberArguments } from './target-number';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -82,6 +83,8 @@ export class EosConsole extends EventEmitter {
 
             const version = await this.getVersion();
             console.log(`Eos version ${version}`);
+
+            await this.subscribe();
         };
 
         this.socket = EosOscStream.connect(this.host, this.port);
@@ -393,48 +396,67 @@ export class EosConsole extends EventEmitter {
     private handleOscMessage(msg: EosOscMessage) {
         // console.debug('OSC message:', msg);
 
-        if (msg.address.startsWith('/eos/out/get/')) {
-            this.requestManager.handleResponse(msg);
-        } else if (msg.address.startsWith('/eos/out/notify/')) {
-            // Show data change events (following /eos/subscribe = 1)
-            // if (CUE_CHANGED_OSC_ADDRESS.test(msg.address)) {
-            //     const changedTargets = expandTargetNumberArguments(
-            //         msg.args.slice(1),
-            //     );
-            //     for (const cueNumber of changedTargets) {
-            //         const getCueMsg: EosOscMessage = {
-            //             address: `/eos/get/cue/1/${cueNumber}`,
-            //             args: [],
-            //         };
-            //         this.socket?.writeOsc(getCueMsg);
-            //     }
-            // }
-        } else if (msg.address.startsWith('/eos/out/')) {
-            // Implicit output
-            const implicitOutput = parseImplicitOutput(msg);
-
-            if (implicitOutput) {
-                switch (implicitOutput.kind) {
-                    case 'show-name':
-                        this.showName = implicitOutput.data;
-                        break;
-                    case 'active-cue':
-                        // this.activeCueNumber = implicitOutput.data;
-                        break;
-                    case 'pending-cue':
-                        // this.pendingCueNumber = implicitOutput.data;
-                        break;
-                }
-
-                this.emit(implicitOutput.kind, implicitOutput.data);
+        if (msg.address.startsWith('/eos/')) {
+            if (msg.address.startsWith('/eos/out/get/')) {
+                this.requestManager.handleResponse(msg);
+            } else if (msg.address.startsWith('/eos/out/notify/')) {
+                this.handleNotifyMessage(msg);
+            } else if (msg.address.startsWith('/eos/out/')) {
+                this.handleImplicitOutputMessage(msg);
+            } else {
+                console.warn('Unrecognised Eos output:', msg);
             }
         } else {
-            console.debug('Explicit output:', msg);
+            this.emit('osc', msg);
+        }
+    }
+
+    private handleImplicitOutputMessage(msg: EosOscMessage) {
+        const implicitOutput = parseImplicitOutput(msg);
+
+        if (implicitOutput) {
+            switch (implicitOutput.kind) {
+                case 'show-name':
+                    this.showName = implicitOutput.data;
+                    break;
+            }
+
+            this.emit(implicitOutput.kind, implicitOutput.data);
+        }
+    }
+
+    private handleNotifyMessage(msg: EosOscMessage) {
+        const addressParts = msg.address.split('/');
+        const targetType = addressParts[4] as RecordTargetType;
+        const targetNumbers = expandTargetNumberArguments(msg.args.slice(1));
+
+        if (targetType === 'cue') {
+            const cueList = addressParts[5];
+            this.emit(
+                'record-target-change',
+                targetType,
+                targetNumbers,
+                cueList,
+            );
+        } else {
+            this.emit('record-target-change', targetType, targetNumbers);
         }
     }
 
     private handleOscError(err: Error) {
         console.error('OSC connection error:', err);
+    }
+
+    private async subscribe(subscribe = true) {
+        await this.socket?.writeOsc({
+            address: '/eos/subscribe',
+            args: [
+                {
+                    type: 'integer',
+                    value: +subscribe,
+                },
+            ],
+        });
     }
 
     private async request(
