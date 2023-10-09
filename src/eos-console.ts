@@ -2,15 +2,15 @@ import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
 import { parseImplicitOutput } from './eos-implicit-output';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
-import {
-    unpackCue,
-    unpackCueList,
-    unpackGroup,
-    unpackMacro,
-} from './osc-record-target-parser';
 import { RecordTargetType } from './record-targets';
 import { RequestManager } from './request-manager';
 import { expandTargetNumberArguments } from './target-number';
+import {
+    EosRecordTargetCountRequest,
+    EosRequest,
+    EosResponseType,
+    EosVersionRequest,
+} from './request';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -100,13 +100,8 @@ export class EosConsole extends EventEmitter {
         this.requestManager.cancelAll(new Error('connection closed'));
     }
 
-    async getVersion() {
-        const response = await this.request({
-            address: '/eos/get/version',
-            args: [],
-        });
-
-        return response[0].args[0] as string;
+    async getVersion(): Promise<string> {
+        return await this.request(new EosVersionRequest());
     }
 
     async changeUser(userId: number) {
@@ -151,70 +146,77 @@ export class EosConsole extends EventEmitter {
     }
 
     async getCues(cueList: number) {
-        const count = await this.getRecordTargetListCount('cue', { cueList });
-        const requests = new Array(count);
+        const count = await this.request(
+            new EosRecordTargetCountRequest('cue', cueList),
+        );
 
-        for (let i = 0; i < count; i++) {
-            requests[i] = this.request(
-                {
-                    address: `/eos/get/cue/${cueList}/index/${i}`,
-                    args: [],
-                },
-                true,
-                4,
-            );
-        }
+        console.log(`Cues (${cueList}):`, count);
 
-        const responses = await Promise.all(requests);
-
-        return responses.map(unpackCue);
+        // const count = await this.getRecordTargetListCount('cue', { cueList });
+        // const requests = new Array(count);
+        // for (let i = 0; i < count; i++) {
+        //     requests[i] = this.request(
+        //         {
+        //             address: `/eos/get/cue/${cueList}/index/${i}`,
+        //             args: [],
+        //         },
+        //         true,
+        //         4,
+        //     );
+        // }
+        // const responses = await Promise.all(requests);
+        // return responses.map(unpackCue);
     }
 
     async getCueList(cueList: number) {
-        const responses = await this.request(
-            {
-                address: `/eos/get/cuelist/${cueList}`,
-                args: [],
-            },
-            true,
-            2,
-        );
-
-        console.log(responses);
-
-        if (responses[0].args[1] === undefined) {
-            return null;
-        }
-
-        return unpackCueList(responses);
+        // const responses = await this.request(
+        //     {
+        //         address: `/eos/get/cuelist/${cueList}`,
+        //         args: [],
+        //     },
+        //     true,
+        //     2,
+        // );
+        // console.log(responses);
+        // if (responses[0].args[1] === undefined) {
+        //     return null;
+        // }
+        // return unpackCueList(responses);
     }
 
     async getCueLists() {
-        const count = await this.getRecordTargetListCount('cuelist');
-        const requests = new Array(count);
+        const count = await this.request(
+            new EosRecordTargetCountRequest('cuelist'),
+        );
 
-        for (let i = 0; i < count; i++) {
-            requests[i] = this.request(
-                {
-                    address: `/eos/get/cuelist/index/${i}`,
-                    args: [],
-                },
-                true,
-                2,
-            );
-        }
+        console.log('Cue lists:', count);
 
-        const responses = await Promise.all(requests);
-
-        return responses.map(unpackCueList);
+        // const count = await this.getRecordTargetListCount('cuelist');
+        // const requests = new Array(count);
+        // for (let i = 0; i < count; i++) {
+        //     requests[i] = this.request(
+        //         {
+        //             address: `/eos/get/cuelist/index/${i}`,
+        //             args: [],
+        //         },
+        //         true,
+        //         2,
+        //     );
+        // }
+        // const responses = await Promise.all(requests);
+        // return responses.map(unpackCueList);
     }
 
     getCurve(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getCurves(): never {
-        throw new Error('not implemented');
+    async getCurves() {
+        const count = await this.request(
+            new EosRecordTargetCountRequest('curve'),
+        );
+
+        console.log('Curves:', count);
     }
 
     getGroup(targetNumber: string): never {
@@ -222,31 +224,36 @@ export class EosConsole extends EventEmitter {
     }
 
     async getGroups() {
-        const count = await this.getRecordTargetListCount('group');
-        const requests = new Array(count);
+        const count = await this.request(
+            new EosRecordTargetCountRequest('group'),
+        );
 
-        for (let i = 0; i < count; i++) {
-            requests[i] = this.request(
-                {
-                    address: `/eos/get/group/index/${i}`,
-                    args: [],
-                },
-                true,
-                2,
-            );
-        }
+        console.log('Groups:', count);
 
-        const responses = await Promise.all(requests);
-
-        return responses.map(unpackGroup);
+        // const count = await this.getRecordTargetListCount('group');
+        // const requests = new Array(count);
+        // for (let i = 0; i < count; i++) {
+        //     requests[i] = this.request(
+        //         {
+        //             address: `/eos/get/group/index/${i}`,
+        //             args: [],
+        //         },
+        //         true,
+        //         2,
+        //     );
+        // }
+        // const responses = await Promise.all(requests);
+        // return responses.map(unpackGroup);
     }
 
     getEffect(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getEffects(): never {
-        throw new Error('not implemented');
+    async getEffects() {
+        const count = await this.request(new EosRecordTargetCountRequest('fx'));
+
+        console.log('Effects:', count);
     }
 
     getMacro(targetNumber: string): never {
@@ -254,103 +261,136 @@ export class EosConsole extends EventEmitter {
     }
 
     async getMacros() {
-        const count = await this.getRecordTargetListCount('macro');
-        const requests = new Array(count);
+        const count = await this.request(
+            new EosRecordTargetCountRequest('macro'),
+        );
 
-        for (let i = 0; i < count; i++) {
-            requests[i] = this.request(
-                {
-                    address: `/eos/get/macro/index/${i}`,
-                    args: [],
-                },
-                true,
-                2,
-            );
-        }
+        console.log('Macros:', count);
 
-        const responses = await Promise.all(requests);
-
-        return responses.map(unpackMacro);
+        // const count = await this.getRecordTargetListCount('macro');
+        // const requests = new Array(count);
+        // for (let i = 0; i < count; i++) {
+        //     requests[i] = this.request(
+        //         {
+        //             address: `/eos/get/macro/index/${i}`,
+        //             args: [],
+        //         },
+        //         true,
+        //         2,
+        //     );
+        // }
+        // const responses = await Promise.all(requests);
+        // return responses.map(unpackMacro);
     }
 
     getMagicSheet(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getMagicSheets(): never {
-        throw new Error('not implemented');
+    async getMagicSheets() {
+        const count = await this.request(new EosRecordTargetCountRequest('ms'));
+
+        console.log('Magic sheets:', count);
     }
 
     getPatchEntry(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getPatch(): never {
-        throw new Error('not implemented');
+    async getPatch() {
+        const count = await this.request(
+            new EosRecordTargetCountRequest('patch'),
+        );
+
+        console.log('Patch:', count);
     }
 
     getPreset(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getPresets(): never {
-        throw new Error('not implemented');
+    async getPresets() {
+        const count = await this.request(
+            new EosRecordTargetCountRequest('preset'),
+        );
+
+        console.log('Presets:', count);
     }
 
     getIntensityPalette(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getIntensityPalettes(): never {
-        throw new Error('not implemented');
+    async getIntensityPalettes() {
+        const count = await this.request(new EosRecordTargetCountRequest('ip'));
+
+        console.log('IPs:', count);
     }
 
     getFocusPalette(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getFocusPalettes(): never {
-        throw new Error('not implemented');
+    async getFocusPalettes() {
+        const count = await this.request(new EosRecordTargetCountRequest('fp'));
+
+        console.log('FPs:', count);
     }
 
     getColorPalette(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getColorPalettes(): never {
-        throw new Error('not implemented');
+    async getColorPalettes() {
+        const count = await this.request(new EosRecordTargetCountRequest('cp'));
+
+        console.log('CPs:', count);
     }
 
     getBeamPalette(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getBeamPalettes(): never {
-        throw new Error('not implemented');
+    async getBeamPalettes() {
+        const count = await this.request(new EosRecordTargetCountRequest('bp'));
+
+        console.log('BPs:', count);
     }
 
     getPixmap(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getPixmaps(): never {
-        throw new Error('not implemented');
+    async getPixmaps() {
+        const count = await this.request(
+            new EosRecordTargetCountRequest('pixmap'),
+        );
+
+        console.log('Pixmaps:', count);
     }
 
     getSnapshot(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getSnapshots(): never {
+    async getSnapshots() {
+        const count = await this.request(
+            new EosRecordTargetCountRequest('snap'),
+        );
+
+        console.log('Snapshots:', count);
+    }
+
+    getSub(targetNumber: string): never {
         throw new Error('not implemented');
     }
 
-    getSubmaster(targetNumber: string): never {
-        throw new Error('not implemented');
-    }
+    async getSubs() {
+        const count = await this.request(
+            new EosRecordTargetCountRequest('sub'),
+        );
 
-    getSubmasters(): never {
-        throw new Error('not implemented');
+        console.log('Subs:', count);
     }
 
     // FIXME: this only exists to allow some quick and dirty testing!
@@ -372,25 +412,21 @@ export class EosConsole extends EventEmitter {
     private async getRecordTargetListCount(
         targetType: RecordTargetType,
         options?: { cueList: number },
-    ): Promise<number> {
-        let address: string;
-
-        if (targetType === 'cue') {
-            if (!options?.cueList) {
-                throw new TypeError('options.cueList must be provided');
-            }
-
-            address = `/eos/get/cue/${options.cueList}/count`;
-        } else {
-            address = `/eos/get/${targetType}/count`;
-        }
-
-        const response = await this.request({
-            address,
-            args: [],
-        });
-
-        return response[0].args[0] as number;
+    ) {
+        // let address: string;
+        // if (targetType === 'cue') {
+        //     if (!options?.cueList) {
+        //         throw new TypeError('options.cueList must be provided');
+        //     }
+        //     address = `/eos/get/cue/${options.cueList}/count`;
+        // } else {
+        //     address = `/eos/get/${targetType}/count`;
+        // }
+        // const response = await this.request({
+        //     address,
+        //     args: [],
+        // });
+        // return response[0].args[0] as number;
     }
 
     private handleOscMessage(msg: EosOscMessage) {
@@ -459,18 +495,12 @@ export class EosConsole extends EventEmitter {
         });
     }
 
-    private async request(
-        msg: EosOscMessage,
-        isRecordTarget = false,
-        expectedResponseCount = 1,
-    ) {
-        const response = this.requestManager.register(
-            msg,
-            isRecordTarget,
-            expectedResponseCount,
-        );
+    private async request<T extends EosResponseType<EosRequest>>(
+        request: EosRequest<T>,
+    ): Promise<T> {
+        const response = this.requestManager.register(request);
 
-        await this.socket?.writeOsc(msg);
+        await this.socket?.writeOsc(request.outboundMessage);
 
         return response;
     }
