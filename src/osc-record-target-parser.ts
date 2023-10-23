@@ -1,6 +1,58 @@
 import { EosOscMessage } from './eos-osc-stream';
-import { Cue, CueList, Group, Macro, RecordTarget } from './record-targets';
+import {
+    Cue,
+    CueList,
+    Group,
+    Macro,
+    RecordTarget,
+    RecordTargetType,
+} from './record-targets';
 import { expandTargetNumberArguments } from './target-number';
+
+export const OSC_RECORD_TARGET_UNPACK_FN = {
+    // patch: null,
+    cuelist: unpackCueList,
+    cue: unpackCue,
+    group: unpackGroup,
+    macro: unpackMacro,
+    // sub: null,
+    // preset: null,
+    // ip: null,
+    // fp: null,
+    // cp: null,
+    // bp: null,
+    // curve: null,
+    // fx: null,
+    // snap: null,
+    // pixmap: null,
+    // ms: null,
+    // '3dserver': ,
+    // 'fpe': ,
+};
+
+export const OSC_RECORD_TARGET_RESPONSE_COUNT: Record<
+    RecordTargetType,
+    number
+> = {
+    // patch: 2,
+    cuelist: 2,
+    cue: 4,
+    group: 2,
+    macro: 2,
+    // sub: 2,
+    // preset: 4,
+    // ip: 3,
+    // fp: 3,
+    // cp: 3,
+    // bp: 3,
+    // curve: 1,
+    // fx: 1,
+    // snap: 1,
+    // pixmap: 2,
+    // ms: 1,
+    // '3dserver': ,
+    // 'fpe': ,
+};
 
 export function unpackCue(messages: EosOscMessage[]): Cue {
     return {
