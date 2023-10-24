@@ -1,7 +1,10 @@
 import { EosOscMessage } from './eos-osc-stream';
+import { EosRequest, EosResponseType } from './request';
 
 export class RequestManager {
-    private inflightRequests: InflightRequest[] = [];
+    // FIXME:
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private inflightRequests: InflightRequest<any>[] = [];
 
     cancelAll(reason: Error) {
         this.inflightRequests.forEach(r => {
@@ -11,46 +14,34 @@ export class RequestManager {
 
     handleResponse(msg: EosOscMessage) {
         const currentRequest = this.currentRequest;
-
         if (!currentRequest) {
             throw new Error('unsolicited /eos/out/get response');
         }
 
-        currentRequest.collectedResponses.push(msg);
+        currentRequest.handler.collectResponse(msg);
 
-        // All responses have been collected after either the expected number
-        // has been received, or we're requesting a record target and single
-        // response was received that doesn't contain a UID.
-        const done =
-            currentRequest.collectedResponses.length >=
-                currentRequest.expectedResponseCount ||
-            (currentRequest.isRecordTarget && msg.args[1] === undefined);
-
-        if (done) {
-            currentRequest.completer.resolve(currentRequest.collectedResponses);
+        if (currentRequest.handler.error) {
+            currentRequest.completer.reject(currentRequest.handler.error);
+        } else if (currentRequest.handler.isComplete) {
             this.inflightRequests.shift();
+            currentRequest.completer.resolve(currentRequest.handler.response);
         }
     }
 
-    register(
-        request: EosOscMessage,
-        isRecordTarget = false,
-        expectedResponseCount = 1,
-    ) {
-        const completer = new Deferred<EosOscMessage[]>();
+    register<T extends EosResponseType<EosRequest>>(
+        request: EosRequest<T>,
+    ): Promise<T> {
+        const completer = new Deferred<T>();
 
         this.inflightRequests.push({
-            address: request.address,
-            collectedResponses: [],
             completer,
-            expectedResponseCount,
-            isRecordTarget,
+            handler: request,
         });
 
         return completer.promise;
     }
 
-    private get currentRequest(): InflightRequest | undefined {
+    private get currentRequest(): InflightRequest<unknown> | undefined {
         return this.inflightRequests[0];
     }
 }
@@ -65,10 +56,7 @@ class Deferred<T = unknown> {
     });
 }
 
-interface InflightRequest {
-    address: string;
-    collectedResponses: EosOscMessage[];
-    completer: Deferred<EosOscMessage[]>;
-    expectedResponseCount: number;
-    isRecordTarget: boolean;
+interface InflightRequest<T extends EosResponseType<EosRequest>> {
+    completer: Deferred<T>;
+    handler: EosRequest<T>;
 }
