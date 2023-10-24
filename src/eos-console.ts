@@ -102,7 +102,7 @@ export class EosConsole extends EventEmitter {
     }
 
     async getVersion(): Promise<string> {
-        return await this.request(new EosVersionRequest());
+        return this.request(new EosVersionRequest());
     }
 
     async changeUser(userId: number) {
@@ -143,7 +143,7 @@ export class EosConsole extends EventEmitter {
     }
 
     async getCue(cueList: number, targetNumber: number) {
-        return await this.request(
+        return this.request(
             EosRecordTargetRequest.get('cue', targetNumber, cueList),
         );
     }
@@ -173,60 +173,54 @@ export class EosConsole extends EventEmitter {
     }
 
     async getCueList(cueList: number) {
-        return await this.request(
-            EosRecordTargetRequest.get('cuelist', cueList),
-        );
+        return this.request(EosRecordTargetRequest.get('cuelist', cueList));
     }
 
     async getCueLists() {
-        return await this.getRecordTargetList('cuelist');
+        return this.getRecordTargetList('cuelist');
     }
 
-    getCurve(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getCurve(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('curve', targetNumber));
     }
 
     async getCurves() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('curve');
     }
 
     async getGroup(targetNumber: number) {
-        return await this.request(
-            EosRecordTargetRequest.get('group', targetNumber),
-        );
+        return this.request(EosRecordTargetRequest.get('group', targetNumber));
     }
 
     async getGroups() {
-        return await this.getRecordTargetList('group');
+        return this.getRecordTargetList('group');
     }
 
-    getEffect(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getEffect(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('fx', targetNumber));
     }
 
     async getEffects() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('fx');
     }
 
     async getMacro(targetNumber: number) {
-        return await this.request(
-            EosRecordTargetRequest.get('macro', targetNumber),
-        );
+        return this.request(EosRecordTargetRequest.get('macro', targetNumber));
     }
 
     async getMacros() {
-        return await this.getRecordTargetList('macro');
+        return this.getRecordTargetList('macro');
     }
 
-    getMagicSheet(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getMagicSheet(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('ms', targetNumber));
     }
 
     async getMagicSheets() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('ms');
     }
 
-    getPatchEntry(targetNumber: string): never {
+    async getPatchChannel(targetNumber: number) {
         throw new Error('not implemented');
     }
 
@@ -234,68 +228,68 @@ export class EosConsole extends EventEmitter {
         throw new Error('not implemented');
     }
 
-    getPreset(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getPreset(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('preset', targetNumber));
     }
 
     async getPresets() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('preset');
     }
 
-    getIntensityPalette(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getIntensityPalette(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('ip', targetNumber));
     }
 
     async getIntensityPalettes() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('ip');
     }
 
-    getFocusPalette(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getFocusPalette(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('fp', targetNumber));
     }
 
     async getFocusPalettes() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('fp');
     }
 
-    getColorPalette(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getColorPalette(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('cp', targetNumber));
     }
 
     async getColorPalettes() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('cp');
     }
 
-    getBeamPalette(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getBeamPalette(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('bp', targetNumber));
     }
 
     async getBeamPalettes() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('bp');
     }
 
-    getPixmap(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getPixmap(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('pixmap', targetNumber));
     }
 
     async getPixmaps() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('pixmap');
     }
 
-    getSnapshot(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getSnapshot(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('snap', targetNumber));
     }
 
     async getSnapshots() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('snap');
     }
 
-    getSub(targetNumber: string): never {
-        throw new Error('not implemented');
+    async getSub(targetNumber: number) {
+        return this.request(EosRecordTargetRequest.get('sub', targetNumber));
     }
 
     async getSubs() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('sub');
     }
 
     private async getRecordTargetList<
@@ -304,6 +298,10 @@ export class EosConsole extends EventEmitter {
         const count = await this.request(
             new EosRecordTargetCountRequest(targetType),
         );
+
+        if (count === 0) {
+            return [];
+        }
 
         const requests: Promise<RecordTargets[TTargetType] | null>[] =
             new Array(count);
