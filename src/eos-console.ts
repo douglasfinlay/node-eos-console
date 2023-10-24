@@ -112,7 +112,7 @@ export class EosConsole extends EventEmitter {
         });
     }
 
-    executeCommand(
+    async executeCommand(
         command: string,
         substitutions: string[],
         newCommand = true,
@@ -122,16 +122,16 @@ export class EosConsole extends EventEmitter {
             args: [command, ...substitutions],
         };
 
-        this.socket?.writeOsc(msg);
+        await this.socket?.writeOsc(msg);
     }
 
-    fireCue(cueListNumber: number, cueNumber: string) {
+    async fireCue(cueListNumber: number, cueNumber: string) {
         const msg: EosOscMessage = {
             address: `/eos/cue/${cueListNumber}/${cueNumber}/fire`,
             args: [],
         };
 
-        this.socket?.writeOsc(msg);
+        await this.socket?.writeOsc(msg);
     }
 
     getShowName(): string | undefined {
