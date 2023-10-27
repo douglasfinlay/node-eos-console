@@ -114,7 +114,7 @@ export class EosConsole extends EventEmitter {
 
     async executeCommand(
         command: string,
-        substitutions: string[],
+        substitutions: string[] = [],
         newCommand = true,
     ) {
         const msg: EosOscMessage = {
