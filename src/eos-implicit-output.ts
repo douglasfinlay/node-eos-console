@@ -133,6 +133,21 @@ interface EosActiveChannelOutput {
     channels: TargetNumber[];
 }
 
+const STATE_LOOKUP: Record<number, EosState> = {
+    0: 'blind',
+    1: 'live',
+};
+
+const WHEEL_CATEGORY_LOOKUP: Record<number, EosWheelCategory> = {
+    0: null,
+    1: 'intensity',
+    2: 'focus',
+    3: 'color',
+    4: 'image',
+    5: 'form',
+    6: 'shutter',
+};
+
 export const EOS_IMPLICIT_OUTPUT: Record<
     string,
     (
@@ -185,7 +200,7 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     }),
     '/eos/out/event/state': message => ({
         type: 'state',
-        state: Number(message.args[0]),
+        state: STATE_LOOKUP[message.args[0]],
     }),
     '/eos/out/active/cue': message => ({
         type: 'active-cue-percent',
@@ -250,7 +265,7 @@ export const EOS_IMPLICIT_OUTPUT: Record<
             type: 'active-wheel',
             wheelNumber: Number(params.wheelNumber),
             parameter,
-            category: Number(message.args[1]),
+            category: WHEEL_CATEGORY_LOOKUP[message.args[1]],
             value: Number(message.args[2]),
         };
     },
