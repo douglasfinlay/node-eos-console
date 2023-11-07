@@ -66,7 +66,7 @@ export const OSC_RECORD_TARGET_RESPONSE_COUNT: Record<
 function unpackCue(messages: EosOscMessage[]): Cue {
     return {
         targetType: 'cue',
-        targetNumber: messages[0].address.split('/')[6],
+        targetNumber: Number(messages[0].address.split('/')[6]),
         ...unpackBaseRecordTarget(messages[0]),
         upTimeDurationMs: messages[0].args[3],
         upTimeDelayMs: messages[0].args[4],
@@ -105,7 +105,7 @@ function unpackCue(messages: EosOscMessage[]): Cue {
 function unpackCueList(messages: EosOscMessage[]): CueList {
     return {
         targetType: 'cuelist',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         playbackMode: messages[0].args[3],
         faderMode: messages[0].args[4],
@@ -124,7 +124,7 @@ function unpackCueList(messages: EosOscMessage[]): CueList {
 function unpackCurve(messages: EosOscMessage[]): Curve {
     return {
         targetType: 'curve',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
     };
 }
@@ -132,7 +132,7 @@ function unpackCurve(messages: EosOscMessage[]): Curve {
 function unpackEffect(messages: EosOscMessage[]): Effect {
     return {
         targetType: 'fx',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         effectType: messages[0].args[3],
         entry: messages[0].args[4],
@@ -145,7 +145,7 @@ function unpackEffect(messages: EosOscMessage[]): Effect {
 function unpackGroup(messages: EosOscMessage[]): Group {
     return {
         targetType: 'group',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         channels: expandTargetNumberArguments(messages[1].args.slice(2)),
     };
@@ -154,7 +154,7 @@ function unpackGroup(messages: EosOscMessage[]): Group {
 function unpackMacro(messages: EosOscMessage[]): Macro {
     return {
         targetType: 'macro',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         mode: messages[0].args[3],
         command: messages[1].args.slice(2).join(''),
@@ -164,7 +164,7 @@ function unpackMacro(messages: EosOscMessage[]): Macro {
 function unpackMagicSheet(messages: EosOscMessage[]): MagicSheet {
     return {
         targetType: 'ms',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
     };
 }
@@ -173,7 +173,7 @@ function unpackPalette(messages: EosOscMessage[]): Palette {
     return {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         targetType: messages[0].address.split('/')[4] as any,
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         absolute: messages[0].args[3],
         locked: messages[0].args[4],
@@ -185,7 +185,7 @@ function unpackPalette(messages: EosOscMessage[]): Palette {
 function unpackPatch(messages: EosOscMessage[]): Patch {
     return {
         targetType: 'patch',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         fixtureManufacturer: messages[0].args[3],
         fixtureModel: messages[0].args[4],
@@ -211,7 +211,7 @@ function unpackPatch(messages: EosOscMessage[]): Patch {
 function unpackPixelMap(messages: EosOscMessage[]): PixelMap {
     return {
         targetType: 'pixmap',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         serverChannel: messages[0].args[3],
         interface: messages[0].args[4],
@@ -226,7 +226,7 @@ function unpackPixelMap(messages: EosOscMessage[]): PixelMap {
 function unpackPreset(messages: EosOscMessage[]): Preset {
     return {
         targetType: 'preset',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         absolute: messages[0].args[3],
         locked: messages[0].args[4],
@@ -239,7 +239,7 @@ function unpackPreset(messages: EosOscMessage[]): Preset {
 function unpackSnapshot(messages: EosOscMessage[]): Snapshot {
     return {
         targetType: 'snap',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
     };
 }
@@ -247,7 +247,7 @@ function unpackSnapshot(messages: EosOscMessage[]): Snapshot {
 function unpackSub(messages: EosOscMessage[]): Sub {
     return {
         targetType: 'sub',
-        targetNumber: messages[0].address.split('/')[5],
+        targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         mode: messages[0].args[3],
         faderMode: messages[0].args[4],

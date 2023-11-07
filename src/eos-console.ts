@@ -1,7 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
-import { Cue, RecordTargetType, RecordTargets } from './record-targets';
+import {
+    Cue,
+    RecordTargetType,
+    RecordTargets,
+    TargetNumber,
+} from './record-targets';
 import { RequestManager } from './request-manager';
 import { expandTargetNumberArguments } from './target-number';
 import {
@@ -129,7 +134,7 @@ export class EosConsole extends EventEmitter {
         await this.socket?.writeOsc(msg);
     }
 
-    async fireCue(cueListNumber: number, cueNumber: string) {
+    async fireCue(cueListNumber: TargetNumber, cueNumber: TargetNumber) {
         const msg: EosOscMessage = {
             address: `/eos/cue/${cueListNumber}/${cueNumber}/fire`,
             args: [],
@@ -146,13 +151,13 @@ export class EosConsole extends EventEmitter {
         return this.showName;
     }
 
-    async getCue(cueList: number, targetNumber: number) {
+    async getCue(cueList: TargetNumber, targetNumber: TargetNumber) {
         return this.request(
             EosRecordTargetRequest.get('cue', targetNumber, cueList),
         );
     }
 
-    async getCues(cueList: number) {
+    async getCues(cueList: TargetNumber) {
         const count = await this.request(
             new EosRecordTargetCountRequest('cue', cueList),
         );
@@ -176,7 +181,7 @@ export class EosConsole extends EventEmitter {
         return cues as Cue[];
     }
 
-    async getCueList(cueList: number) {
+    async getCueList(cueList: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('cuelist', cueList));
     }
 
@@ -184,7 +189,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('cuelist');
     }
 
-    async getCurve(targetNumber: number) {
+    async getCurve(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('curve', targetNumber));
     }
 
@@ -192,7 +197,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('curve');
     }
 
-    async getGroup(targetNumber: number) {
+    async getGroup(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('group', targetNumber));
     }
 
@@ -200,7 +205,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('group');
     }
 
-    async getEffect(targetNumber: number) {
+    async getEffect(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('fx', targetNumber));
     }
 
@@ -208,7 +213,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('fx');
     }
 
-    async getMacro(targetNumber: number) {
+    async getMacro(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('macro', targetNumber));
     }
 
@@ -216,7 +221,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('macro');
     }
 
-    async getMagicSheet(targetNumber: number) {
+    async getMagicSheet(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('ms', targetNumber));
     }
 
@@ -224,7 +229,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('ms');
     }
 
-    async getPatchChannel(targetNumber: number) {
+    async getPatchChannel(targetNumber: TargetNumber) {
         throw new Error('not implemented');
     }
 
@@ -232,7 +237,7 @@ export class EosConsole extends EventEmitter {
         throw new Error('not implemented');
     }
 
-    async getPreset(targetNumber: number) {
+    async getPreset(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('preset', targetNumber));
     }
 
@@ -240,7 +245,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('preset');
     }
 
-    async getIntensityPalette(targetNumber: number) {
+    async getIntensityPalette(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('ip', targetNumber));
     }
 
@@ -248,7 +253,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('ip');
     }
 
-    async getFocusPalette(targetNumber: number) {
+    async getFocusPalette(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('fp', targetNumber));
     }
 
@@ -256,7 +261,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('fp');
     }
 
-    async getColorPalette(targetNumber: number) {
+    async getColorPalette(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('cp', targetNumber));
     }
 
@@ -264,7 +269,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('cp');
     }
 
-    async getBeamPalette(targetNumber: number) {
+    async getBeamPalette(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('bp', targetNumber));
     }
 
@@ -272,7 +277,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('bp');
     }
 
-    async getPixmap(targetNumber: number) {
+    async getPixmap(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('pixmap', targetNumber));
     }
 
@@ -280,7 +285,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('pixmap');
     }
 
-    async getSnapshot(targetNumber: number) {
+    async getSnapshot(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('snap', targetNumber));
     }
 
@@ -288,7 +293,7 @@ export class EosConsole extends EventEmitter {
         return this.getRecordTargetList('snap');
     }
 
-    async getSub(targetNumber: number) {
+    async getSub(targetNumber: TargetNumber) {
         return this.request(EosRecordTargetRequest.get('sub', targetNumber));
     }
 
@@ -366,7 +371,8 @@ export class EosConsole extends EventEmitter {
         const targetNumbers = expandTargetNumberArguments(msg.args.slice(1));
 
         if (targetType === 'cue') {
-            const cueList = addressParts[5];
+            const cueList: TargetNumber = Number(addressParts[5]);
+
             this.emit(
                 'record-target-change',
                 targetType,

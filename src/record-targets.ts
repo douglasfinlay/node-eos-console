@@ -21,9 +21,11 @@ export interface RecordTargets {
 
 export type RecordTargetType = keyof RecordTargets;
 
+export type TargetNumber = number;
+
 export interface RecordTarget {
     targetType: RecordTargetType;
-    targetNumber: string;
+    targetNumber: TargetNumber;
     label: string;
     uid: string;
 }
@@ -41,14 +43,14 @@ export interface Cue extends RecordTarget {
     curve: string;
     downTimeDelayMs: number | null;
     downTimeDurationMs: number | null;
-    effects: string[];
+    effects: TargetNumber[];
     externalLinkAction: string;
     focusTimeDelayMs: number | null;
     focusTimeDurationMs: number | null;
     followTimeMs: number | null;
     hangTimeMs: number | null;
     link: number | string;
-    linkedCueLists: string[];
+    linkedCueLists: TargetNumber[];
     loop: number | null;
     mark: string;
     notes: string;
@@ -71,7 +73,7 @@ export interface CueList extends RecordTarget {
     faderMode: string;
     htp: boolean;
     independent: boolean;
-    linkedCueLists: string[];
+    linkedCueLists: TargetNumber[];
     oosSync: boolean;
     playbackMode: string;
     solo: boolean;
@@ -80,7 +82,7 @@ export interface CueList extends RecordTarget {
 
 export interface Group extends RecordTarget {
     targetType: 'group';
-    channels: string[];
+    channels: TargetNumber[];
 }
 
 export interface Macro extends RecordTarget {
@@ -116,7 +118,7 @@ export interface Sub extends RecordTarget {
     background: boolean;
     downTime: string;
     dwellTime: string;
-    effects: string[];
+    effects: TargetNumber[];
     exclusive: boolean;
     faderMode: string;
     htp: boolean;
@@ -129,17 +131,17 @@ export interface Sub extends RecordTarget {
 export interface Preset extends RecordTarget {
     targetType: 'preset';
     absolute: boolean;
-    byTypeChannels: string[];
-    channels: string[];
-    effects: string[];
+    byTypeChannels: TargetNumber[];
+    channels: TargetNumber[];
+    effects: TargetNumber[];
     locked: boolean;
 }
 
 export interface Palette extends RecordTarget {
     targetType: 'ip' | 'fp' | 'cp' | 'bp';
     absolute: boolean;
-    byTypeChannels: string[];
-    channels: string[];
+    byTypeChannels: TargetNumber[];
+    channels: TargetNumber[];
     locked: boolean;
 }
 
@@ -165,7 +167,7 @@ export interface PixelMap extends RecordTarget {
     fixtureCount: number;
     height: number;
     interface: string;
-    layerChannels: string[];
+    layerChannels: TargetNumber[];
     pixelCount: number;
     serverChannel: number;
     width: number;

@@ -89,9 +89,6 @@ eos.on('osc', ({address, args}) => { /* ... */ });
 - [ ] Ability to retrieve patch
 - [ ] Use some kind of prefix tree to match OSC responses more efficiently
 - [ ] Settle on an event naming convention for implicit output
-- [ ] Choose a data type for target numbers (`number`, `string` or custom type?)
-  - Eos uses both strings and integers in OSC messages, but this library should
-  use a single type for simplicity
 
 ## License
 

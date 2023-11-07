@@ -1,4 +1,5 @@
 import { EosOscArg } from './eos-osc-stream';
+import { TargetNumber } from './record-targets';
 
 /**
  * Parses and expands a target number range into individual target numbers. Target numbers that are not whole will be
@@ -6,11 +7,11 @@ import { EosOscArg } from './eos-osc-stream';
  *   - "1.23" => "1.23"
  *   - "3-5" => [3, 4, 5]
  */
-export function expandTargetNumberArguments(args: EosOscArg[]): string[] {
+export function expandTargetNumberArguments(args: EosOscArg[]): TargetNumber[] {
     const expandedArgs = args.flatMap(arg => {
         switch (typeof arg) {
             case 'number':
-                return String(arg);
+                return arg;
             case 'string':
                 return parseStringTargetNumberRange(arg);
             default:
@@ -25,19 +26,18 @@ export function expandTargetNumberArguments(args: EosOscArg[]): string[] {
     return Array.from(new Set(expandedArgs));
 }
 
-export function parseStringTargetNumberRange(arg: string): string[] {
+export function parseStringTargetNumberRange(arg: string): TargetNumber[] {
     const parts = arg.split('-');
 
     if (parts.length === 1) {
-        return [parts[0]];
+        return [Number(parts[0])];
     } else if (parts.length === 2) {
         const lower = Number(parts[0]);
         const upper = Number(parts[1]);
-
-        const targetNumbers: string[] = [];
+        const targetNumbers: TargetNumber[] = [];
 
         for (let i = lower; i <= upper; i++) {
-            targetNumbers.push(String(i));
+            targetNumbers.push(i);
         }
 
         return targetNumbers;

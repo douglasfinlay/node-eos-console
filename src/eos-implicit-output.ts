@@ -6,6 +6,7 @@ import {
     EosState,
     EosWheelCategory,
 } from './eos-types';
+import { TargetNumber } from './record-targets';
 import { expandTargetNumberArguments } from './target-number';
 
 export type EosImplicitOutput =
@@ -52,20 +53,20 @@ interface EosShowNameOutput {
 
 interface EosActiveCueOutput {
     type: 'active-cue';
-    cueList: number;
-    cueNumber: string;
+    cueList: TargetNumber;
+    cueNumber: TargetNumber;
 }
 
 interface EosPendingCueOutput {
     type: 'pending-cue';
-    cueList: number;
-    cueNumber: string;
+    cueList: TargetNumber;
+    cueNumber: TargetNumber;
 }
 
 interface EosPreviousCueOutput {
     type: 'previous-cue';
-    cueList: number;
-    cueNumber: string;
+    cueList: TargetNumber;
+    cueNumber: TargetNumber;
 }
 
 interface EosSoftkeyOutput {
@@ -129,7 +130,7 @@ interface EosActiveWheelOutput {
 
 interface EosActiveChannelOutput {
     type: 'active-channel';
-    channels: string[];
+    channels: TargetNumber[];
 }
 
 export const EOS_IMPLICIT_OUTPUT: Record<
@@ -227,17 +228,17 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     '/eos/out/active/cue/{cueList}/{cueNumber}': (_, params) => ({
         type: 'active-cue',
         cueList: Number(params.cueList),
-        cueNumber: params.cueNumber,
+        cueNumber: Number(params.cueNumber),
     }),
     '/eos/out/pending/cue/{cueList}/{cueNumber}': (_, params) => ({
         type: 'pending-cue',
         cueList: Number(params.cueList),
-        cueNumber: params.cueNumber,
+        cueNumber: Number(params.cueNumber),
     }),
     '/eos/out/previous/cue/{cueList}/{cueNumber}': (_, params) => ({
         type: 'previous-cue',
         cueList: Number(params.cueList),
-        cueNumber: params.cueNumber,
+        cueNumber: Number(params.cueNumber),
     }),
     '/eos/out/active/wheel/{wheelNumber}': (message, params) => {
         // Remove the "current value" text in square brackets
