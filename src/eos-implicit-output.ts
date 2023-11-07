@@ -30,284 +30,230 @@ export type EosImplicitOutput =
     | EosActiveChannelOutput;
 
 interface EosUserOutput {
-    kind: 'user';
-    data: number;
+    type: 'user';
+    userId: number;
 }
 
 interface EosCmdOutput {
-    kind: 'cmd';
-    data: string;
+    type: 'cmd';
+    commandLine: string;
 }
 
 interface EosUserCmdOutput {
-    kind: 'user-cmd';
-    data: {
-        userId: number;
-        cmd: string;
-    };
+    type: 'user-cmd';
+    userId: number;
+    commandLine: string;
 }
 
 interface EosShowNameOutput {
-    kind: 'show-name';
-    data: string;
+    type: 'show-name';
+    showName: string;
 }
 
 interface EosActiveCueOutput {
-    kind: 'active-cue';
-    data: {
-        cueList: number;
-        cueNumber: string;
-    };
+    type: 'active-cue';
+    cueList: number;
+    cueNumber: string;
 }
 
 interface EosPendingCueOutput {
-    kind: 'pending-cue';
-    data: {
-        cueList: number;
-        cueNumber: string;
-    };
+    type: 'pending-cue';
+    cueList: number;
+    cueNumber: string;
 }
 
 interface EosPreviousCueOutput {
-    kind: 'previous-cue';
-    data: {
-        cueList: number;
-        cueNumber: string;
-    };
+    type: 'previous-cue';
+    cueList: number;
+    cueNumber: string;
 }
 
 interface EosSoftkeyOutput {
-    kind: 'softkey';
-    data: {
-        softkey: number;
-        label: string;
-    };
+    type: 'softkey';
+    softkey: number;
+    label: string;
 }
 
 interface EosActiveCueTextOutput {
-    kind: 'active-cue-text';
-    data: string;
+    type: 'active-cue-text';
+    text: string;
 }
 
 interface EosPendingCueTextOutput {
-    kind: 'pending-cue-text';
-    data: string;
+    type: 'pending-cue-text';
+    text: string;
 }
 
 interface EosPreviousCueTextOutput {
-    kind: 'previous-cue-text';
-    data: string;
+    type: 'previous-cue-text';
+    text: string;
 }
 
 interface EosActiveCuePercentOutput {
-    kind: 'active-cue-percent';
-    data: number;
+    type: 'active-cue-percent';
+    percentComplete: number;
 }
 
 interface EosStateOutput {
-    kind: 'state';
-    data: EosState;
+    type: 'state';
+    state: EosState;
 }
 
 interface EosLockedOutput {
-    kind: 'locked';
-    data: boolean;
+    type: 'locked';
+    locked: boolean;
 }
 
 interface EosColorHueSatOutput {
-    kind: 'color-hs';
-    data: EosColorHueSat | null;
+    type: 'color-hs';
+    color: EosColorHueSat | null;
 }
 
 interface EosFocusPanTiltOutput {
-    kind: 'focus-pan-tilt';
-    data: EosFocusPanTilt | null;
+    type: 'focus-pan-tilt';
+    focus: EosFocusPanTilt | null;
 }
 
 interface EosFocusXYZOutput {
-    kind: 'focus-xyz';
-    data: EosFocusXYZ | null;
+    type: 'focus-xyz';
+    focus: EosFocusXYZ | null;
 }
 
 interface EosActiveWheelOutput {
-    kind: 'active-wheel';
-    data: {
-        category: EosWheelCategory;
-        parameter: string;
-        value: number;
-        wheelNumber: number;
-    };
+    type: 'active-wheel';
+    category: EosWheelCategory;
+    parameter: string;
+    wheelNumber: number;
+    value: number;
 }
 
 interface EosActiveChannelOutput {
-    kind: 'active-channel';
-    data: string[];
+    type: 'active-channel';
+    channels: string[];
 }
 
-const USER_CMD_OSC_ADDRESS = /^\/eos\/out\/user\/(?<userId>\d+)\/cmd$/;
-
-const SOFTKEY_OSC_ADDRESS = /^\/eos\/out\/softkey\/(?<softkey>\d+)$/;
-
-const ACTIVE_CUE_OSC_ADDRESS =
-    /^\/eos\/out\/active\/cue\/(?<cueList>\d+)\/(?<cueNumber>\d+|\d+.\d+$)/;
-
-const PENDING_CUE_OSC_ADDRESS =
-    /^\/eos\/out\/pending\/cue\/(?<cueList>\d+)\/(?<cueNumber>\d+|\d+.\d+$)/;
-
-const PREVIOUS_CUE_OSC_ADDRESS =
-    /^\/eos\/out\/previous\/cue\/(?<cueList>\d+)\/(?<cueNumber>\d+|\d+.\d+$)/;
-
-const ACTIVE_WHEEL_OSC_ADDRESS =
-    /^\/eos\/out\/active\/wheel\/(?<wheelNumber>\d+)$/;
-
-export function parseImplicitOutput(
-    message: EosOscMessage,
-): EosImplicitOutput | null {
-    let result: EosImplicitOutput | null = null;
-
-    if (message.address === '/eos/out/color/hs') {
-        result = {
-            kind: 'color-hs',
-            data:
-                message.args.length === 2
-                    ? {
-                          hue: Number(message.args[0]),
-                          saturation: Number(message.args[1]),
-                      }
-                    : null,
-        };
-    } else if (message.address === '/eos/out/pantilt') {
-        result = {
-            kind: 'focus-pan-tilt',
-            data:
-                message.args.length === 6
-                    ? {
-                          panRange: [
-                              Number(message.args[0]),
-                              Number(message.args[1]),
-                          ],
-                          tiltRange: [
-                              Number(message.args[2]),
-                              Number(message.args[3]),
-                          ],
-                          pan: Number(message.args[4]),
-                          tilt: Number(message.args[5]),
-                      }
-                    : null,
-        };
-    } else if (message.address === '/eos/out/xyz') {
-        result = {
-            kind: 'focus-xyz',
-            data:
-                message.args.length === 3
-                    ? {
-                          x: Number(message.args[0]),
-                          y: Number(message.args[1]),
-                          z: Number(message.args[2]),
-                      }
-                    : null,
-        };
-    } else if (message.address === '/eos/out/event/locked') {
-        result = {
-            kind: 'locked',
-            data: !!message.args[0],
-        };
-    } else if (message.address === '/eos/out/event/state') {
-        result = {
-            kind: 'state',
-            data: Number(message.args[0]),
-        };
-    } else if (message.address === '/eos/out/active/cue') {
-        result = {
-            kind: 'active-cue-percent',
-            data: Number(message.args[0]),
-        };
-    } else if (message.address === '/eos/out/active/cue/text') {
-        result = {
-            kind: 'active-cue-text',
-            data: message.args[0],
-        };
-    } else if (message.address === '/eos/out/pending/cue/text') {
-        result = {
-            kind: 'pending-cue-text',
-            data: message.args[0],
-        };
-    } else if (message.address === '/eos/out/previous/cue/text') {
-        result = {
-            kind: 'previous-cue-text',
-            data: message.args[0],
-        };
-    } else if (message.address === '/eos/out/user') {
-        result = {
-            kind: 'user',
-            data: Number(message.args[0]),
-        };
-    } else if (message.address === '/eos/out/cmd') {
-        result = {
-            kind: 'cmd',
-            data: message.args[0],
-        };
-    } else if (USER_CMD_OSC_ADDRESS.test(message.address)) {
-        result = {
-            kind: 'user-cmd',
-            data: {
-                userId: Number(message.address.split('/')[4]),
-                cmd: message.args[0],
-            },
-        };
-    } else if (SOFTKEY_OSC_ADDRESS.test(message.address)) {
-        result = {
-            kind: 'softkey',
-            data: {
-                softkey: Number(message.address.split('/')[4]),
-                label: message.args[0],
-            },
-        };
-    } else if (message.address === '/eos/out/show/name') {
-        result = {
-            kind: 'show-name',
-            data: message.args[0],
-        };
-    } else if (ACTIVE_CUE_OSC_ADDRESS.test(message.address)) {
-        result = {
-            kind: 'active-cue',
-            data: {
-                cueList: Number(message.address.split('/')[5]),
-                cueNumber: message.address.split('/')[6],
-            },
-        };
-    } else if (PENDING_CUE_OSC_ADDRESS.test(message.address)) {
-        result = {
-            kind: 'pending-cue',
-            data: {
-                cueList: Number(message.address.split('/')[5]),
-                cueNumber: message.address.split('/')[6],
-            },
-        };
-    } else if (PREVIOUS_CUE_OSC_ADDRESS.test(message.address)) {
-        result = {
-            kind: 'previous-cue',
-            data: {
-                cueList: Number(message.address.split('/')[5]),
-                cueNumber: message.address.split('/')[6],
-            },
-        };
-    } else if (ACTIVE_WHEEL_OSC_ADDRESS.test(message.address)) {
+export const EOS_IMPLICIT_OUTPUT: Record<
+    string,
+    (
+        message: EosOscMessage,
+        params: Record<string, string>,
+    ) => EosImplicitOutput
+> = {
+    '/eos/out/color/hs': message => ({
+        type: 'color-hs',
+        color:
+            message.args.length === 2
+                ? {
+                      hue: Number(message.args[0]),
+                      saturation: Number(message.args[1]),
+                  }
+                : null,
+    }),
+    '/eos/out/pantilt': message => ({
+        type: 'focus-pan-tilt',
+        focus:
+            message.args.length === 6
+                ? {
+                      panRange: [
+                          Number(message.args[0]),
+                          Number(message.args[1]),
+                      ],
+                      tiltRange: [
+                          Number(message.args[2]),
+                          Number(message.args[3]),
+                      ],
+                      pan: Number(message.args[4]),
+                      tilt: Number(message.args[5]),
+                  }
+                : null,
+    }),
+    '/eos/out/xyz': message => ({
+        type: 'focus-xyz',
+        focus:
+            message.args.length === 3
+                ? {
+                      x: Number(message.args[0]),
+                      y: Number(message.args[1]),
+                      z: Number(message.args[2]),
+                  }
+                : null,
+    }),
+    '/eos/out/event/locked': message => ({
+        type: 'locked',
+        locked: !!message.args[0],
+    }),
+    '/eos/out/event/state': message => ({
+        type: 'state',
+        state: Number(message.args[0]),
+    }),
+    '/eos/out/active/cue': message => ({
+        type: 'active-cue-percent',
+        percentComplete: Number(message.args[0]),
+    }),
+    '/eos/out/active/cue/text': message => ({
+        type: 'active-cue-text',
+        text: message.args[0],
+    }),
+    '/eos/out/pending/cue/text': message => ({
+        type: 'pending-cue-text',
+        text: message.args[0],
+    }),
+    '/eos/out/previous/cue/text': message => ({
+        type: 'previous-cue-text',
+        text: message.args[0],
+    }),
+    '/eos/out/user': message => ({
+        type: 'user',
+        userId: Number(message.args[0]),
+    }),
+    '/eos/out/cmd': message => ({
+        type: 'cmd',
+        commandLine: message.args[0],
+    }),
+    '/eos/out/user/{userId}/cmd': (message, params) => ({
+        type: 'user-cmd',
+        userId: Number(params.userId),
+        commandLine: message.args[0],
+    }),
+    '/eos/out/softkey/{softkey}': (message, params) => ({
+        type: 'softkey',
+        softkey: Number(params.softkey),
+        label: message.args[0],
+    }),
+    '/eos/out/show/name': message => ({
+        type: 'show-name',
+        showName: message.args[0],
+    }),
+    '/eos/out/active/cue/{cueList}/{cueNumber}': (_, params) => ({
+        type: 'active-cue',
+        cueList: Number(params.cueList),
+        cueNumber: params.cueNumber,
+    }),
+    '/eos/out/pending/cue/{cueList}/{cueNumber}': (_, params) => ({
+        type: 'pending-cue',
+        cueList: Number(params.cueList),
+        cueNumber: params.cueNumber,
+    }),
+    '/eos/out/previous/cue/{cueList}/{cueNumber}': (_, params) => ({
+        type: 'previous-cue',
+        cueList: Number(params.cueList),
+        cueNumber: params.cueNumber,
+    }),
+    '/eos/out/active/wheel/{wheelNumber}': (message, params) => {
         // Remove the "current value" text in square brackets
         let parameter = message.args[0] as string;
         const i = parameter.lastIndexOf('[');
         parameter = parameter.substring(0, i).trimEnd();
 
-        result = {
-            kind: 'active-wheel',
-            data: {
-                wheelNumber: Number(message.address.split('/')[5]),
-                parameter,
-                category: Number(message.args[1]),
-                value: Number(message.args[2]),
-            },
+        return {
+            type: 'active-wheel',
+            wheelNumber: Number(params.wheelNumber),
+            parameter,
+            category: Number(message.args[1]),
+            value: Number(message.args[2]),
         };
-    } else if (message.address === '/eos/out/active/chan') {
+    },
+    '/eos/out/active/chan': message => {
         const rawChannels = message.args[0] as string;
         const i = rawChannels.indexOf(' ');
 
@@ -318,13 +264,9 @@ export function parseImplicitOutput(
                 .filter(x => x.length),
         );
 
-        result = {
-            kind: 'active-channel',
-            data: channels,
+        return {
+            type: 'active-channel',
+            channels: channels,
         };
-    } else {
-        console.warn(`Unrecognised implicit output:`, message);
-    }
-
-    return result;
-}
+    },
+};

@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
-import { parseImplicitOutput } from './eos-implicit-output';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
 import { Cue, RecordTargetType, RecordTargets } from './record-targets';
 import { RequestManager } from './request-manager';
@@ -12,6 +11,8 @@ import {
     EosResponseType,
     EosVersionRequest,
 } from './request';
+import { OscRouter } from './osc-router';
+import { EOS_IMPLICIT_OUTPUT } from './eos-implicit-output';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -19,6 +20,7 @@ export class EosConsole extends EventEmitter {
     private socket: EosOscStream | null = null;
     private connectionState: EosConnectionState = 'disconnected';
 
+    private implicitOutputRouter = new OscRouter();
     private requestManager = new RequestManager();
 
     private eosVersion: string | null = null;
@@ -29,6 +31,8 @@ export class EosConsole extends EventEmitter {
         public readonly port = 3037,
     ) {
         super();
+
+        this.initImplicitOutputRoutes();
     }
 
     get consoleConnectionState(): EosConnectionState {
@@ -343,26 +347,16 @@ export class EosConsole extends EventEmitter {
             } else if (msg.address.startsWith('/eos/out/notify/')) {
                 this.handleNotifyMessage(msg);
             } else if (msg.address.startsWith('/eos/out/')) {
-                this.handleImplicitOutputMessage(msg);
+                const handled = this.implicitOutputRouter.route(msg);
+
+                if (!handled) {
+                    console.warn(`Unrecognised implicit output:`, msg);
+                }
             } else {
                 console.warn('Unrecognised Eos output:', msg);
             }
         } else {
             this.emit('osc', msg);
-        }
-    }
-
-    private handleImplicitOutputMessage(msg: EosOscMessage) {
-        const implicitOutput = parseImplicitOutput(msg);
-
-        if (implicitOutput) {
-            switch (implicitOutput.kind) {
-                case 'show-name':
-                    this.showName = implicitOutput.data;
-                    break;
-            }
-
-            this.emit(implicitOutput.kind, implicitOutput.data);
         }
     }
 
@@ -386,6 +380,23 @@ export class EosConsole extends EventEmitter {
 
     private handleOscError(err: Error) {
         console.error('OSC connection error:', err);
+    }
+
+    private initImplicitOutputRoutes() {
+        for (const [route, handler] of Object.entries(EOS_IMPLICIT_OUTPUT)) {
+            this.implicitOutputRouter.on(route, (message, params) => {
+                const implicitOutput = handler(message, params);
+
+                switch (implicitOutput.type) {
+                    case 'show-name':
+                        this.showName = implicitOutput.showName;
+                        break;
+                }
+
+                const { type: event, ...payload } = implicitOutput;
+                this.emit(event, payload);
+            });
+        }
     }
 
     private async subscribe(subscribe = true) {
