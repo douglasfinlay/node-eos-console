@@ -25,7 +25,7 @@ export class EosConsole extends EventEmitter {
     private socket: EosOscStream | null = null;
     private connectionState: EosConnectionState = 'disconnected';
 
-    private implicitOutputRouter = new OscRouter();
+    private router = new OscRouter();
     private requestManager = new RequestManager();
 
     private eosVersion: string | null = null;
@@ -37,7 +37,7 @@ export class EosConsole extends EventEmitter {
     ) {
         super();
 
-        this.initImplicitOutputRoutes();
+        this.initRoutes();
     }
 
     get consoleConnectionState(): EosConnectionState {
@@ -84,7 +84,7 @@ export class EosConsole extends EventEmitter {
             });
 
             this.socket?.on('error', this.handleOscError.bind(this));
-            this.socket?.on('data', this.handleOscMessage.bind(this));
+            this.socket?.on('data', this.router.route.bind(this.router));
 
             console.log('Connected');
 
@@ -343,28 +343,6 @@ export class EosConsole extends EventEmitter {
         return super.emit(eventName, ...args);
     }
 
-    private handleOscMessage(msg: EosOscMessage) {
-        // console.debug('OSC message:', msg);
-
-        if (msg.address.startsWith('/eos/')) {
-            if (msg.address.startsWith('/eos/out/get/')) {
-                this.requestManager.handleResponse(msg);
-            } else if (msg.address.startsWith('/eos/out/notify/')) {
-                this.handleNotifyMessage(msg);
-            } else if (msg.address.startsWith('/eos/out/')) {
-                const handled = this.implicitOutputRouter.route(msg);
-
-                if (!handled) {
-                    console.warn(`Unrecognised implicit output:`, msg);
-                }
-            } else {
-                console.warn('Unrecognised Eos output:', msg);
-            }
-        } else {
-            this.emit('osc', msg);
-        }
-    }
-
     private handleNotifyMessage(msg: EosOscMessage) {
         const addressParts = msg.address.split('/');
         const targetType = addressParts[4] as RecordTargetType;
@@ -388,9 +366,9 @@ export class EosConsole extends EventEmitter {
         console.error('OSC connection error:', err);
     }
 
-    private initImplicitOutputRoutes() {
+    private initRoutes() {
         for (const [route, handler] of Object.entries(EOS_IMPLICIT_OUTPUT)) {
-            this.implicitOutputRouter.on(route, (message, params) => {
+            this.router.on(route, (message, params) => {
                 const implicitOutput = handler(message, params);
 
                 switch (implicitOutput.type) {
@@ -403,6 +381,18 @@ export class EosConsole extends EventEmitter {
                 this.emit(event, payload);
             });
         }
+
+        this.router
+            .on('/eos/out/get/*', message =>
+                this.requestManager.handleResponse(message),
+            )
+            .on('/eos/out/notify/*', message =>
+                this.handleNotifyMessage(message),
+            )
+            .on('/eos/*', message =>
+                console.warn(`Unhandled OSC message "${message.address}"`),
+            )
+            .on('/*', message => this.emit('osc', message));
     }
 
     private async subscribe(subscribe = true) {
