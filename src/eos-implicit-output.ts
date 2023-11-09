@@ -28,7 +28,10 @@ export type EosImplicitOutput =
     | EosFocusPanTiltOutput
     | EosFocusXYZOutput
     | EosActiveWheelOutput
-    | EosActiveChannelOutput;
+    | EosActiveChannelOutput
+    | EosShowClearedOutput
+    | EosShowLoadedOutput
+    | EosShowSavedOutput;
 
 interface EosUserOutput {
     type: 'user';
@@ -131,6 +134,20 @@ interface EosActiveWheelOutput {
 interface EosActiveChannelOutput {
     type: 'active-channel';
     channels: TargetNumber[];
+}
+
+interface EosShowClearedOutput {
+    type: 'show-cleared';
+}
+
+interface EosShowLoadedOutput {
+    type: 'show-loaded';
+    filePath: string;
+}
+
+interface EosShowSavedOutput {
+    type: 'show-saved';
+    filePath: string;
 }
 
 const STATE_LOOKUP: Record<number, EosState> = {
@@ -315,11 +332,24 @@ export const EOS_IMPLICIT_OUTPUT: Record<
 
     //
     // OSC Show File Information
-    // TODO: show saved, cleared, and loaded events
     //
     '/eos/out/show/name': message => ({
         type: 'show-name',
         showName: message.args[0],
+    }),
+
+    '/eos/out/event/show/loaded': message => ({
+        type: 'show-loaded',
+        filePath: message.args[0],
+    }),
+
+    '/eos/out/event/show/saved': message => ({
+        type: 'show-saved',
+        filePath: message.args[0],
+    }),
+
+    '/eos/out/event/show/cleared': () => ({
+        type: 'show-cleared',
     }),
 
     //
