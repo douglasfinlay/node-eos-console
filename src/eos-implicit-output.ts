@@ -165,6 +165,7 @@ export const EOS_IMPLICIT_OUTPUT: Record<
                   }
                 : null,
     }),
+
     '/eos/out/pantilt': message => ({
         type: 'focus-pan-tilt',
         focus:
@@ -183,6 +184,7 @@ export const EOS_IMPLICIT_OUTPUT: Record<
                   }
                 : null,
     }),
+
     '/eos/out/xyz': message => ({
         type: 'focus-xyz',
         focus:
@@ -194,81 +196,38 @@ export const EOS_IMPLICIT_OUTPUT: Record<
                   }
                 : null,
     }),
-    '/eos/out/event/locked': message => ({
-        type: 'locked',
-        locked: !!message.args[0],
-    }),
-    '/eos/out/event/state': message => ({
-        type: 'state',
-        state: STATE_LOOKUP[message.args[0]],
-    }),
-    '/eos/out/active/cue': message => ({
-        type: 'active-cue-percent',
-        percentComplete: Number(message.args[0]),
-    }),
-    '/eos/out/active/cue/text': message => ({
-        type: 'active-cue-text',
-        text: message.args[0],
-    }),
-    '/eos/out/pending/cue/text': message => ({
-        type: 'pending-cue-text',
-        text: message.args[0],
-    }),
-    '/eos/out/previous/cue/text': message => ({
-        type: 'previous-cue-text',
-        text: message.args[0],
-    }),
-    '/eos/out/user': message => ({
-        type: 'user',
-        userId: Number(message.args[0]),
-    }),
-    '/eos/out/cmd': message => ({
-        type: 'cmd',
-        commandLine: message.args[0],
-    }),
-    '/eos/out/user/{userId}/cmd': (message, params) => ({
-        type: 'user-cmd',
-        userId: Number(params.userId),
-        commandLine: message.args[0],
-    }),
+
     '/eos/out/softkey/{softkey}': (message, params) => ({
         type: 'softkey',
         softkey: Number(params.softkey),
         label: message.args[0],
     }),
-    '/eos/out/show/name': message => ({
-        type: 'show-name',
-        showName: message.args[0],
-    }),
-    '/eos/out/active/cue/{cueList}/{cueNumber}': (_, params) => ({
-        type: 'active-cue',
-        cueList: Number(params.cueList),
-        cueNumber: Number(params.cueNumber),
-    }),
-    '/eos/out/pending/cue/{cueList}/{cueNumber}': (_, params) => ({
-        type: 'pending-cue',
-        cueList: Number(params.cueList),
-        cueNumber: Number(params.cueNumber),
-    }),
-    '/eos/out/previous/cue/{cueList}/{cueNumber}': (_, params) => ({
-        type: 'previous-cue',
-        cueList: Number(params.cueList),
-        cueNumber: Number(params.cueNumber),
-    }),
-    '/eos/out/active/wheel/{wheelNumber}': (message, params) => {
-        // Remove the "current value" text in square brackets
-        let parameter = message.args[0] as string;
-        const i = parameter.lastIndexOf('[');
-        parameter = parameter.substring(0, i).trimEnd();
 
-        return {
-            type: 'active-wheel',
-            wheelNumber: Number(params.wheelNumber),
-            parameter,
-            category: WHEEL_CATEGORY_LOOKUP[message.args[1]],
-            value: Number(message.args[2]),
-        };
-    },
+    //
+    // OSC Command Lines
+    //
+    '/eos/out/cmd': message => ({
+        type: 'cmd',
+        commandLine: message.args[0],
+    }),
+
+    '/eos/out/user/{userId}/cmd': (message, params) => ({
+        type: 'user-cmd',
+        userId: Number(params.userId),
+        commandLine: message.args[0],
+    }),
+
+    //
+    // OSC Settings
+    //
+    '/eos/out/user': message => ({
+        type: 'user',
+        userId: Number(message.args[0]),
+    }),
+
+    //
+    // OSC Active Channels and Parameters
+    //
     '/eos/out/active/chan': message => {
         const rawChannels = message.args[0] as string;
         const i = rawChannels.indexOf(' ');
@@ -285,4 +244,94 @@ export const EOS_IMPLICIT_OUTPUT: Record<
             channels: channels,
         };
     },
+
+    '/eos/out/active/wheel/{wheelNumber}': (message, params) => {
+        // Remove the "current value" text in square brackets
+        let parameter = message.args[0] as string;
+        const i = parameter.lastIndexOf('[');
+        parameter = parameter.substring(0, i).trimEnd();
+
+        return {
+            type: 'active-wheel',
+            wheelNumber: Number(params.wheelNumber),
+            parameter,
+            category: WHEEL_CATEGORY_LOOKUP[message.args[1]],
+            value: Number(message.args[2]),
+        };
+    },
+
+    //
+    // OSC Cues
+    //
+    '/eos/out/active/cue/{cueList}/{cueNumber}': (_, params) => ({
+        type: 'active-cue',
+        cueList: Number(params.cueList),
+        cueNumber: Number(params.cueNumber),
+    }),
+
+    '/eos/out/active/cue': message => ({
+        type: 'active-cue-percent',
+        percentComplete: Number(message.args[0]),
+    }),
+
+    '/eos/out/active/cue/text': message => ({
+        type: 'active-cue-text',
+        text: message.args[0],
+    }),
+
+    '/eos/out/pending/cue/{cueList}/{cueNumber}': (_, params) => ({
+        type: 'pending-cue',
+        cueList: Number(params.cueList),
+        cueNumber: Number(params.cueNumber),
+    }),
+
+    '/eos/out/pending/cue/text': message => ({
+        type: 'pending-cue-text',
+        text: message.args[0],
+    }),
+
+    '/eos/out/previous/cue/{cueList}/{cueNumber}': (_, params) => ({
+        type: 'previous-cue',
+        cueList: Number(params.cueList),
+        cueNumber: Number(params.cueNumber),
+    }),
+
+    '/eos/out/previous/cue/text': message => ({
+        type: 'previous-cue-text',
+        text: message.args[0],
+    }),
+
+    //
+    // TODO: OSC Direct Select Banks
+    //
+
+    //
+    // TODO: OSC Fader Banks
+    //
+
+    //
+    // TODO: OSC Show Control Events
+    //
+
+    //
+    // OSC Show File Information
+    // TODO: show saved, cleared, and loaded events
+    //
+    '/eos/out/show/name': message => ({
+        type: 'show-name',
+        showName: message.args[0],
+    }),
+
+    //
+    // OSC Miscellaneous Console Events
+    //
+    '/eos/out/event/locked': message => ({
+        type: 'locked',
+        locked: !!message.args[0],
+    }),
+
+    '/eos/out/event/state': message => ({
+        type: 'state',
+        state: STATE_LOOKUP[message.args[0]],
+    }),
 };
