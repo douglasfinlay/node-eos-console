@@ -343,23 +343,13 @@ export class EosConsole extends EventEmitter {
         return super.emit(eventName, ...args);
     }
 
-    private handleNotifyMessage(msg: EosOscMessage) {
-        const addressParts = msg.address.split('/');
-        const targetType = addressParts[4] as RecordTargetType;
-        const targetNumbers = expandTargetNumberArguments(msg.args.slice(1));
-
-        if (targetType === 'cue') {
-            const cueList: TargetNumber = Number(addressParts[5]);
-
-            this.emit(
-                'record-target-change',
-                targetType,
-                targetNumbers,
-                cueList,
-            );
-        } else {
-            this.emit('record-target-change', targetType, targetNumbers);
-        }
+    private emitRecordTargetChange(
+        targetType: RecordTargetType,
+        targetNumberArgs: unknown[],
+        ...extraArgs: unknown[]
+    ) {
+        const targetNumbers = expandTargetNumberArguments(targetNumberArgs);
+        this.emit('record-target-change', targetType, targetNumbers, extraArgs);
     }
 
     private handleOscError(err: Error) {
@@ -386,9 +376,19 @@ export class EosConsole extends EventEmitter {
             .on('/eos/out/get/*', message =>
                 this.requestManager.handleResponse(message),
             )
-            .on('/eos/out/notify/*', message =>
-                this.handleNotifyMessage(message),
-            )
+            .on('/eos/out/notify/cue/{cueList}', (message, params) => {
+                this.emitRecordTargetChange(
+                    'cue',
+                    message.args.slice(1),
+                    Number(params.cueList),
+                );
+            })
+            .on('/eos/out/notify/{targetType}', (message, params) => {
+                this.emitRecordTargetChange(
+                    params.targetType as RecordTargetType,
+                    message.args.slice(1),
+                );
+            })
             .on('/eos/*', message =>
                 console.warn(
                     `Unhandled OSC message "${
