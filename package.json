@@ -2,7 +2,11 @@
   "name": "eos-console",
   "version": "0.0.0",
   "description": "Library to interface with ETC Eos Family lighting consoles.",
-  "main": "lib/index.js",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "./lib"
+  ],
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf ./lib",
@@ -19,7 +23,9 @@
   "keywords": [
     "etc",
     "eos",
-    "lighting"
+    "lighting",
+    "osc",
+    "theatre"
   ],
   "author": "Douglas Finlay <douglas@douglasfinlay.com>",
   "license": "MIT",
