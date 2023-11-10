@@ -87,7 +87,6 @@ eos.on('osc', ({address, args}) => { /* ... */ });
 - [ ] Publish to NPM
 - [ ] Documentation
 - [ ] Ability to retrieve patch
-- [ ] Use some kind of prefix tree to match OSC responses more efficiently
 - [ ] Settle on an event naming convention for implicit output
 
 ## License
