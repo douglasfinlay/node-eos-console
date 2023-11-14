@@ -161,8 +161,7 @@ export class EosRecordTargetRequest<
         return new EosRecordTargetRequest<RecordTargets[TTargetType]>(
             outboundAddress,
             OSC_RECORD_TARGET_RESPONSE_COUNT[targetType],
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            OSC_RECORD_TARGET_UNPACK_FN[targetType] as any,
+            OSC_RECORD_TARGET_UNPACK_FN[targetType],
         );
     }
 
@@ -197,8 +196,7 @@ export class EosRecordTargetRequest<
         return new EosRecordTargetRequest<RecordTargets[TTargetType]>(
             outboundAddress,
             OSC_RECORD_TARGET_RESPONSE_COUNT[targetType],
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            unpackFn as any,
+            unpackFn,
         );
     }
 

@@ -21,6 +21,8 @@ export interface RecordTargets {
 
 export type RecordTargetType = keyof RecordTargets;
 
+export type PaletteType = Extract<RecordTargetType, 'ip' | 'fp' | 'cp' | 'bp'>;
+
 export type TargetNumber = number;
 
 export interface RecordTarget {

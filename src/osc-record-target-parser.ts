@@ -8,17 +8,23 @@ import {
     Macro,
     MagicSheet,
     Palette,
+    PaletteType,
     Patch,
     PixelMap,
     Preset,
     RecordTarget,
     RecordTargetType,
+    RecordTargets,
     Snapshot,
     Sub,
 } from './record-targets';
 import { expandTargetNumberArguments } from './target-number';
 
-export const OSC_RECORD_TARGET_UNPACK_FN = {
+type UnpackFn<T extends RecordTarget> = (messages: EosOscMessage[]) => T;
+
+type UnpackFnMap = { [K in RecordTargetType]: UnpackFn<RecordTargets[K]> };
+
+export const OSC_RECORD_TARGET_UNPACK_FN: UnpackFnMap = {
     patch: unpackPatch,
     cuelist: unpackCueList,
     cue: unpackCue,
@@ -171,8 +177,7 @@ function unpackMagicSheet(messages: EosOscMessage[]): MagicSheet {
 
 function unpackPalette(messages: EosOscMessage[]): Palette {
     return {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        targetType: messages[0].address.split('/')[4] as any,
+        targetType: messages[0].address.split('/')[4] as PaletteType,
         targetNumber: Number(messages[0].address.split('/')[5]),
         ...unpackBaseRecordTarget(messages[0]),
         absolute: messages[0].args[3],
