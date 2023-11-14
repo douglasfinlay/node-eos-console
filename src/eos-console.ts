@@ -13,7 +13,6 @@ import {
     EosRecordTargetCountRequest,
     EosRecordTargetRequest,
     EosRequest,
-    EosResponseType,
     EosVersionRequest,
 } from './request';
 import { OscRouter } from './osc-router';
@@ -413,9 +412,7 @@ export class EosConsole extends EventEmitter {
         });
     }
 
-    private async request<T extends EosResponseType<EosRequest>>(
-        request: EosRequest<T>,
-    ): Promise<T> {
+    private async request<T>(request: EosRequest<T>): Promise<T> {
         const response = this.requestManager.register(request);
 
         await this.socket?.writeOsc(request.outboundMessage);

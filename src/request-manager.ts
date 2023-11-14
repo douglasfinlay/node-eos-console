@@ -1,10 +1,8 @@
 import { EosOscMessage } from './eos-osc-stream';
-import { EosRequest, EosResponseType } from './request';
+import { EosRequest } from './request';
 
 export class RequestManager {
-    // FIXME:
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private inflightRequests: InflightRequest<any>[] = [];
+    private inflightRequests: InflightRequest[] = [];
 
     cancelAll(reason: Error) {
         this.inflightRequests.forEach(r => {
@@ -24,24 +22,28 @@ export class RequestManager {
             currentRequest.completer.reject(currentRequest.handler.error);
         } else if (currentRequest.handler.isComplete) {
             this.inflightRequests.shift();
+
+            // Explicitly check for undefined as null is a valid response
+            if (currentRequest.handler.response === undefined) {
+                throw new Error('undefined response in request handler');
+            }
+
             currentRequest.completer.resolve(currentRequest.handler.response);
         }
     }
 
-    register<T extends EosResponseType<EosRequest>>(
-        request: EosRequest<T>,
-    ): Promise<T> {
+    register<T>(request: EosRequest<T>): Promise<T> {
         const completer = new Deferred<T>();
 
         this.inflightRequests.push({
-            completer,
+            completer: completer as Deferred<unknown>,
             handler: request,
         });
 
         return completer.promise;
     }
 
-    private get currentRequest(): InflightRequest<unknown> | undefined {
+    private get currentRequest(): InflightRequest | undefined {
         return this.inflightRequests[0];
     }
 }
@@ -56,7 +58,7 @@ class Deferred<T = unknown> {
     });
 }
 
-interface InflightRequest<T extends EosResponseType<EosRequest>> {
+interface InflightRequest<T = unknown> {
     completer: Deferred<T>;
     handler: EosRequest<T>;
 }

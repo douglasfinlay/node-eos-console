@@ -10,17 +10,11 @@ import {
     RecordTargets,
 } from './record-targets';
 
-export type EosResponseType<T extends EosRequest> = T extends EosRequest<
-    infer R
->
-    ? R
-    : never;
-
 /**
  * Prepares an `/eos/get/...` OSC request then collects, validates, and parses
  * one or more responses.
  */
-export abstract class EosRequest<T = unknown> {
+export abstract class EosRequest<T> {
     protected static readonly REQUEST_PREFIX = '/eos/get';
     protected static readonly RESPONSE_PREFIX = '/eos/out/get';
 
