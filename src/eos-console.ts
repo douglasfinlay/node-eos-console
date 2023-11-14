@@ -234,7 +234,7 @@ export class EosConsole extends EventEmitter {
     }
 
     async getPatch() {
-        throw new Error('not implemented');
+        return this.getRecordTargetList('patch');
     }
 
     async getPreset(targetNumber: TargetNumber) {

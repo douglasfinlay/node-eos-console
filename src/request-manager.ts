@@ -15,7 +15,7 @@ export class RequestManager {
     handleResponse(msg: EosOscMessage) {
         const currentRequest = this.currentRequest;
         if (!currentRequest) {
-            throw new Error('unsolicited /eos/out/get response');
+            throw new Error(`unsolicited response "${msg.address}"`);
         }
 
         currentRequest.handler.collectResponse(msg);

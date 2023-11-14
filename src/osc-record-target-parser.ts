@@ -43,7 +43,7 @@ export const OSC_RECORD_TARGET_RESPONSE_COUNT: Record<
     RecordTargetType,
     number
 > = {
-    patch: 2,
+    patch: 4,
     cuelist: 2,
     cue: 4,
     group: 2,
