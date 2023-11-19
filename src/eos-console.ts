@@ -2,6 +2,8 @@ import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
 import {
+    Channel,
+    ChannelPart,
     Cue,
     Patch,
     RecordTargetType,
@@ -234,14 +236,14 @@ export class EosConsole extends EventEmitter {
         );
     }
 
-    async getChannel(targetNumber: TargetNumber): Promise<Patch[]> {
+    async getChannel(targetNumber: TargetNumber) {
         // Make an initial request to determine the number of parts
         const firstPart = await this.request(
             requests.EosPatchRequest.get(targetNumber, 1),
         );
 
         if (!firstPart) {
-            return [];
+            return null;
         }
 
         // Request the remaining parts if there are any
@@ -261,13 +263,29 @@ export class EosConsole extends EventEmitter {
             );
         }
 
-        return [firstPart, ...remainingParts] as Patch[];
+        return transformPatchToChannel([
+            firstPart,
+            ...(remainingParts as Patch[]),
+        ]);
     }
 
     async getPatch() {
-        return this.getRecordTargetList('patch', i =>
+        const patch = await this.getRecordTargetList('patch', i =>
             requests.EosPatchRequest.index(i),
         );
+
+        const patchByTargetNumber = patch.reduce<Record<number, Patch[]>>(
+            (group, entry) => {
+                const { targetNumber } = entry;
+                group[targetNumber] = group[targetNumber] ?? [];
+                group[targetNumber].push(entry);
+
+                return group;
+            },
+            {},
+        );
+
+        return Object.values(patchByTargetNumber).map(transformPatchToChannel);
     }
 
     async getPreset(targetNumber: TargetNumber) {
@@ -472,4 +490,49 @@ export class EosConsole extends EventEmitter {
 
         return response;
     }
+}
+
+function transformPatchToChannel(patchParts: Patch[]): Channel {
+    const transformKeys: (keyof ChannelPart)[] = [
+        'uid',
+        'label',
+        'address',
+        'currentLevel',
+        'fixtureManufacturer',
+        'fixtureModel',
+        'gel',
+        'intensityParameterAddress',
+        'notes',
+        'text1',
+        'text2',
+        'text3',
+        'text4',
+        'text5',
+        'text6',
+        'text7',
+        'text8',
+        'text9',
+        'text10',
+    ];
+
+    const targetNumber = patchParts[0].targetNumber;
+    const parts = patchParts.map(part => {
+        if (part.targetNumber !== targetNumber) {
+            throw new Error(
+                'unexpected target number when transforming patch entry',
+            );
+        }
+
+        return Object.fromEntries(
+            transformKeys
+                .filter(key => key in part)
+                .map(key => [key, part[key]]),
+        ) as ChannelPart;
+    });
+
+    return {
+        targetType: 'patch',
+        targetNumber,
+        parts,
+    };
 }

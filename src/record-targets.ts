@@ -104,7 +104,6 @@ export interface Patch extends RecordTarget {
     notes: string;
     partCount: number;
     partNumber: number;
-    text10: string;
     text1: string;
     text2: string;
     text3: string;
@@ -114,7 +113,37 @@ export interface Patch extends RecordTarget {
     text7: string;
     text8: string;
     text9: string;
+    text10: string;
 }
+
+export interface Channel {
+    targetType: Patch['targetType'];
+    targetNumber: Patch['targetNumber'];
+    parts: ChannelPart[];
+}
+
+export type ChannelPart = Pick<
+    Patch,
+    | 'uid'
+    | 'label'
+    | 'address'
+    | 'currentLevel'
+    | 'fixtureManufacturer'
+    | 'fixtureModel'
+    | 'gel'
+    | 'intensityParameterAddress'
+    | 'notes'
+    | 'text1'
+    | 'text2'
+    | 'text3'
+    | 'text4'
+    | 'text5'
+    | 'text6'
+    | 'text7'
+    | 'text8'
+    | 'text9'
+    | 'text10'
+>;
 
 export interface Sub extends RecordTarget {
     targetType: 'sub';
