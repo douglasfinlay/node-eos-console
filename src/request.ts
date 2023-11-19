@@ -382,16 +382,21 @@ export class EosPatchRequest extends EosRecordTargetRequest<Patch> {
         return new EosPatchRequest(`/eos/get/patch/index/${index}`, 4);
     }
 
-    // FIXME: response count of a patch request varies depending on the number
-    // of parts in the target
-    static get(targetNumber: TargetNumber): EosPatchRequest {
-        throw new Error('not implemented');
+    static get(
+        targetNumber: TargetNumber,
+        partNumber: number,
+    ): EosPatchRequest {
+        return new EosPatchRequest(
+            `/eos/get/patch/${targetNumber}/${partNumber}`,
+            4,
+        );
     }
 
     protected override unpack(messages: EosOscMessage[]): Patch {
         return {
             targetType: 'patch',
             targetNumber: Number(messages[0].address.split('/')[5]),
+            partNumber: Number(messages[0].address.split('/')[6]),
             ...unpackBaseRecordTarget(messages[0]),
             fixtureManufacturer: messages[0].args[3],
             fixtureModel: messages[0].args[4],

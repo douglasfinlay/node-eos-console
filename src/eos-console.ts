@@ -3,6 +3,7 @@ import { inspect } from 'node:util';
 import { EosOscMessage, EosOscStream } from './eos-osc-stream';
 import {
     Cue,
+    Patch,
     RecordTargetType,
     RecordTargets,
     TargetNumber,
@@ -233,8 +234,34 @@ export class EosConsole extends EventEmitter {
         );
     }
 
-    async getPatchChannel(targetNumber: TargetNumber) {
-        return this.request(requests.EosPatchRequest.get(targetNumber));
+    async getChannel(targetNumber: TargetNumber): Promise<Patch[]> {
+        // Make an initial request to determine the number of parts
+        const firstPart = await this.request(
+            requests.EosPatchRequest.get(targetNumber, 1),
+        );
+
+        if (!firstPart) {
+            return [];
+        }
+
+        // Request the remaining parts if there are any
+        const remainingPartRequests: Promise<Patch | null>[] = [];
+
+        for (let part = 2; part <= firstPart.partCount; part++) {
+            remainingPartRequests.push(
+                this.request(requests.EosPatchRequest.get(targetNumber, part)),
+            );
+        }
+
+        const remainingParts = await Promise.all(remainingPartRequests);
+
+        if (remainingParts.includes(null)) {
+            throw new Error(
+                `null part found when requesting channel ${targetNumber}`,
+            );
+        }
+
+        return [firstPart, ...remainingParts] as Patch[];
     }
 
     async getPatch() {
@@ -350,7 +377,7 @@ export class EosConsole extends EventEmitter {
 
         if (recordTargets.includes(null)) {
             throw new Error(
-                `null record target found when requesting record target list "${recordTargets}"`,
+                `null record target found when requesting record target list "${targetType}"`,
             );
         }
 

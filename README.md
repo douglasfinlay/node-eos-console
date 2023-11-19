@@ -85,7 +85,6 @@ eos.on('osc', ({address, args}) => { /* ... */ });
 ## To Do
 
 - [ ] Documentation
-- [ ] Ability to retrieve patch
 - [ ] Settle on an event naming convention for implicit output
 
 ## License

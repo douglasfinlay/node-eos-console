@@ -103,6 +103,7 @@ export interface Patch extends RecordTarget {
     intensityParameterAddress: number;
     notes: string;
     partCount: number;
+    partNumber: number;
     text10: string;
     text1: string;
     text2: string;
