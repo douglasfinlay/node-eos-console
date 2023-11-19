@@ -1,4 +1,4 @@
-<h1 align="center"><code>node-eos-console</code></h1>
+<h1 align="center"><code>eos-console</code></h1>
   <p align="center">Node.js library to interface with ETC Eos Family lighting
   consoles, written in TypeScript</p>
 </div>
@@ -89,7 +89,7 @@ eos.on('osc', ({address, args}) => { /* ... */ });
 
 ## License
 
-`node-eos-console` is licensed under the MIT license. See
+`eos-console` is licensed under the MIT license. See
 [`LICENSE`](https://github.com/douglasfinlay/node-eos-console/blob/main/LICENSE)
 for details.
 
