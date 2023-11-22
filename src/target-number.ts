@@ -16,10 +16,9 @@ export function expandTargetNumberArguments(args: EosOscArg[]): TargetNumber[] {
             case 'string':
                 return parseStringTargetNumberRange(arg);
             default:
-                console.error(
-                    `unexpected target number argument type: ${typeof arg}`,
+                throw new Error(
+                    `unexpected type "${typeof arg}" for target number argument: ${arg}`,
                 );
-                return [];
         }
     });
 
@@ -43,7 +42,6 @@ export function parseStringTargetNumberRange(arg: string): TargetNumber[] {
 
         return targetNumbers;
     } else {
-        console.error(`malformed target number argument: ${arg}`);
-        return [];
+        throw new Error(`malformed target number argument: ${arg}`);
     }
 }
