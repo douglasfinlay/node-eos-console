@@ -6,8 +6,7 @@ import {
     EosState,
     EosWheelCategory,
 } from './eos-types';
-import { TargetNumber } from './record-targets';
-import { expandTargetNumberArguments } from './target-number';
+import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 export type EosImplicitOutput =
     | EosCmdOutput

@@ -16,9 +16,8 @@ import {
     RecordTargetType,
     Snapshot,
     Sub,
-    TargetNumber,
 } from './record-targets';
-import { expandTargetNumberArguments } from './target-number';
+import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 /**
  * Prepares an `/eos/get/...` OSC request then collects, validates, and parses

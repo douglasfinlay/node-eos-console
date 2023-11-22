@@ -1,5 +1,6 @@
 import { EosOscArg } from './eos-osc-stream';
-import { TargetNumber } from './record-targets';
+
+export type TargetNumber = number;
 
 /**
  * Parses and expands a target number range into individual target numbers. Target numbers that are not whole will be

@@ -8,10 +8,9 @@ import {
     Patch,
     RecordTargetType,
     RecordTargets,
-    TargetNumber,
 } from './record-targets';
 import { RequestManager } from './request-manager';
-import { expandTargetNumberArguments } from './target-number';
+import { TargetNumber, expandTargetNumberArguments } from './target-number';
 import * as requests from './request';
 import { OscRouter } from './osc-router';
 import { EOS_IMPLICIT_OUTPUT } from './eos-implicit-output';

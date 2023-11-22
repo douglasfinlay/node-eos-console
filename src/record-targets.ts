@@ -1,3 +1,5 @@
+import { TargetNumber } from './target-number';
+
 export interface RecordTargets {
     patch: Patch;
     cuelist: CueList;
@@ -22,8 +24,6 @@ export interface RecordTargets {
 export type RecordTargetType = keyof RecordTargets;
 
 export type PaletteType = Extract<RecordTargetType, 'ip' | 'fp' | 'cp' | 'bp'>;
-
-export type TargetNumber = number;
 
 export interface RecordTarget {
     targetType: RecordTargetType;
@@ -170,7 +170,7 @@ export interface Preset extends RecordTarget {
 }
 
 export interface Palette extends RecordTarget {
-    targetType: 'ip' | 'fp' | 'cp' | 'bp';
+    targetType: PaletteType;
     absolute: boolean;
     byTypeChannels: TargetNumber[];
     channels: TargetNumber[];
