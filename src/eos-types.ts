@@ -1,13 +1,14 @@
-export type EosState = 'blind' | 'live';
+import { TargetNumber } from './target-number';
 
-export type EosWheelCategory =
-    | null
-    | 'intensity'
-    | 'focus'
-    | 'color'
-    | 'image'
-    | 'form'
-    | 'shutter';
+export interface EosColorHueSat {
+    hue: number;
+    saturation: number;
+}
+
+export interface EosCueIdentifier {
+    cueList: TargetNumber;
+    cueNumber: TargetNumber;
+}
 
 export interface EosFocusPanTilt {
     pan: number;
@@ -22,7 +23,19 @@ export interface EosFocusXYZ {
     z: number;
 }
 
-export interface EosColorHueSat {
-    hue: number;
-    saturation: number;
+export type EosState = 'blind' | 'live';
+
+export interface EosWheel {
+    category: EosWheelCategory;
+    parameter: string;
+    value: number;
 }
+
+export type EosWheelCategory =
+    | null
+    | 'intensity'
+    | 'focus'
+    | 'color'
+    | 'image'
+    | 'form'
+    | 'shutter';

@@ -13,19 +13,91 @@ import { RequestManager } from './request-manager';
 import { TargetNumber, expandTargetNumberArguments } from './target-number';
 import * as requests from './request';
 import { OscRouter } from './osc-router';
-import { EOS_IMPLICIT_OUTPUT } from './eos-implicit-output';
+import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
+import * as types from './eos-types';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 export class EosConsole extends EventEmitter {
-    private socket: EosOscStream | null = null;
-    private connectionState: EosConnectionState = 'disconnected';
-
+    private _connectionState: EosConnectionState = 'disconnected';
     private router = new OscRouter();
     private requestManager = new RequestManager();
+    private socket: EosOscStream | null = null;
 
-    private eosVersion: string | null = null;
-    private showName: string | null = null;
+    private _activeChannels?: readonly TargetNumber[];
+    private _activeCue?: types.EosCueIdentifier;
+    private _activeWheels?: types.EosWheel[];
+    private _colorHueSat?: types.EosColorHueSat | null;
+    private _commandLine?: string;
+    private _consoleState?: types.EosState;
+    private _focusPanTilt?: types.EosFocusPanTilt | null;
+    private _focusXYZ?: types.EosFocusXYZ | null;
+    private _locked?: boolean;
+    private _pendingCue?: types.EosCueIdentifier;
+    private _previousCue?: types.EosCueIdentifier;
+    private _showName?: string;
+    private _softKeys?: string[];
+    private _version?: string;
+
+    get activeChannels() {
+        return this._activeChannels;
+    }
+
+    get activeCueNumber() {
+        return this._activeCue;
+    }
+
+    get activeWheels(): readonly types.EosWheel[] | undefined {
+        return this._activeWheels;
+    }
+
+    get colorHueSat() {
+        return this._colorHueSat;
+    }
+
+    get commandLine() {
+        return this._commandLine;
+    }
+
+    get connectionState() {
+        return this._connectionState;
+    }
+
+    get consoleState() {
+        return this._consoleState;
+    }
+
+    get focusPanTilt() {
+        return this._focusPanTilt;
+    }
+
+    get focusXYZ() {
+        return this._focusXYZ;
+    }
+
+    get locked() {
+        return this._locked;
+    }
+
+    get pendingCueNumber() {
+        return this._pendingCue;
+    }
+
+    get previousCueNumber() {
+        return this._previousCue;
+    }
+
+    get showName() {
+        return this._showName;
+    }
+
+    get softKeys(): readonly string[] | undefined {
+        return this._softKeys;
+    }
+
+    get version() {
+        return this._version;
+    }
 
     constructor(
         public readonly host: string,
@@ -36,14 +108,10 @@ export class EosConsole extends EventEmitter {
         this.initRoutes();
     }
 
-    get consoleConnectionState(): EosConnectionState {
-        return this.connectionState;
-    }
-
     async connect(timeout = 5000) {
         console.log(`Connecting to EOS console at ${this.host}:${this.port}`);
 
-        this.connectionState = 'connecting';
+        this._connectionState = 'connecting';
         this.emit('connecting');
 
         const timer = setTimeout(() => {
@@ -73,10 +141,11 @@ export class EosConsole extends EventEmitter {
             this.socket?.once('close', () => {
                 console.log('EOS connection closed');
 
-                this.connectionState = 'disconnected';
+                this._connectionState = 'disconnected';
                 this.emit('disconnect');
 
                 this.socket?.removeAllListeners();
+                this.clearState();
             });
 
             this.socket?.on('error', this.handleOscError.bind(this));
@@ -84,7 +153,7 @@ export class EosConsole extends EventEmitter {
 
             console.log('Connected');
 
-            this.connectionState = 'connected';
+            this._connectionState = 'connected';
             this.emit('connect');
 
             const version = await this.getVersion();
@@ -137,14 +206,6 @@ export class EosConsole extends EventEmitter {
         };
 
         await this.socket?.writeOsc(msg);
-    }
-
-    getShowName(): string | undefined {
-        if (!this.showName) {
-            return;
-        }
-
-        return this.showName;
     }
 
     async getCue(cueList: TargetNumber, targetNumber: TargetNumber) {
@@ -412,6 +473,23 @@ export class EosConsole extends EventEmitter {
         return super.emit(eventName, ...args);
     }
 
+    private clearState() {
+        this._activeChannels = undefined;
+        this._activeCue = undefined;
+        this._activeWheels = undefined;
+        this._colorHueSat = undefined;
+        this._commandLine = undefined;
+        this._consoleState = undefined;
+        this._focusPanTilt = undefined;
+        this._focusXYZ = undefined;
+        this._locked = undefined;
+        this._pendingCue = undefined;
+        this._previousCue = undefined;
+        this._showName = undefined;
+        this._softKeys = undefined;
+        this._version = undefined;
+    }
+
     private emitRecordTargetChange(
         targetType: RecordTargetType,
         targetNumberArgs: unknown[],
@@ -425,16 +503,73 @@ export class EosConsole extends EventEmitter {
         console.error('OSC connection error:', err);
     }
 
+    private updateStateFromImplicitOutput(output: EosImplicitOutput) {
+        // TODO: we should be able to determine the implicit output type from the
+        // route that handled it, making this switch redundant
+        switch (output.type) {
+            case 'active-channel':
+                this._activeChannels = output.channels;
+                break;
+            case 'active-cue':
+                this._activeCue = {
+                    cueList: output.cueList,
+                    cueNumber: output.cueNumber,
+                };
+                break;
+            case 'active-wheel':
+                this._activeWheels ??= [];
+                this._activeWheels[output.wheelNumber - 1] = {
+                    category: output.category,
+                    parameter: output.parameter,
+                    value: output.value,
+                };
+                break;
+            case 'cmd':
+                this._commandLine = output.commandLine;
+                break;
+            case 'color-hs':
+                this._colorHueSat = output.color;
+                break;
+            case 'focus-pan-tilt':
+                this._focusPanTilt = output.focus;
+                break;
+            case 'focus-xyz':
+                this._focusXYZ = output.focus;
+                break;
+            case 'locked':
+                this._locked = output.locked;
+                break;
+            case 'pending-cue':
+                this._pendingCue = {
+                    cueList: output.cueList,
+                    cueNumber: output.cueNumber,
+                };
+                break;
+            case 'previous-cue':
+                this._previousCue = {
+                    cueList: output.cueList,
+                    cueNumber: output.cueNumber,
+                };
+                break;
+            case 'show-name':
+                this._showName = output.showName;
+                break;
+            case 'softkey':
+                this._softKeys ??= [];
+                this._softKeys[output.softkey - 1] = output.label;
+                break;
+            case 'state':
+                this._consoleState = output.state;
+                break;
+        }
+    }
+
     private initRoutes() {
         for (const [route, handler] of Object.entries(EOS_IMPLICIT_OUTPUT)) {
             this.router.on(route, (message, params) => {
                 const implicitOutput = handler(message, params);
 
-                switch (implicitOutput.type) {
-                    case 'show-name':
-                        this.showName = implicitOutput.showName;
-                        break;
-                }
+                this.updateStateFromImplicitOutput(implicitOutput);
 
                 const { type: event, ...payload } = implicitOutput;
                 this.emit(event, payload);
