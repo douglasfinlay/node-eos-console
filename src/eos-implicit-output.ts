@@ -5,6 +5,7 @@ import {
     EosFocusPanTilt,
     EosFocusXYZ,
     EosState,
+    EosWheel,
     EosWheelCategory,
     EosWheelMode,
 } from './eos-types';
@@ -65,7 +66,7 @@ interface EosNullableCueOutput {
 
 interface EosSoftKeyOutput {
     type: 'soft-key';
-    softKey: number;
+    index: number;
     label: string;
 }
 
@@ -106,10 +107,8 @@ interface EosFocusXYZOutput {
 
 interface EosActiveWheelOutput {
     type: 'active-wheel';
-    category: EosWheelCategory;
-    parameter: string;
-    wheelNumber: number;
-    value: number;
+    index: number;
+    wheel: EosWheel | null;
 }
 
 interface EosActiveChannelOutput {
@@ -143,7 +142,6 @@ const STATE_LOOKUP: Record<number, EosState> = {
 };
 
 const WHEEL_CATEGORY_LOOKUP: Record<number, EosWheelCategory> = {
-    0: null,
     1: 'intensity',
     2: 'focus',
     3: 'color',
@@ -208,7 +206,7 @@ export const EOS_IMPLICIT_OUTPUT: Record<
 
     '/eos/out/softkey/{softkey}': (message, params) => ({
         type: 'soft-key',
-        softKey: Number(params.softkey),
+        index: Number(params.softkey) - 1,
         label: message.args[0],
     }),
 
@@ -265,17 +263,26 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     },
 
     '/eos/out/active/wheel/{wheelNumber}': (message, params) => {
-        // Remove the "current value" text in square brackets
-        let parameter = message.args[0] as string;
-        const i = parameter.lastIndexOf('[');
-        parameter = parameter.substring(0, i).trimEnd();
+        let wheel: EosWheel | null = null;
+
+        // Only parse the wheel if it has a non-zero category
+        if (message.args[1]) {
+            // Remove the "current value" text in square brackets
+            let parameter = message.args[0] as string;
+            const i = parameter.lastIndexOf('[');
+            parameter = parameter.substring(0, i).trimEnd();
+
+            wheel = {
+                category: WHEEL_CATEGORY_LOOKUP[message.args[1]],
+                parameter,
+                value: Number(message.args[2]),
+            };
+        }
 
         return {
             type: 'active-wheel',
-            wheelNumber: Number(params.wheelNumber),
-            parameter,
-            category: WHEEL_CATEGORY_LOOKUP[message.args[1]],
-            value: Number(message.args[2]),
+            index: Number(params.wheelNumber) - 1,
+            wheel,
         };
     },
 

@@ -26,7 +26,7 @@ export class EosConsole extends EventEmitter {
 
     private _activeChannels?: readonly TargetNumber[];
     private _activeCue?: types.EosCueIdentifier;
-    private _activeWheels?: types.EosWheel[];
+    private _activeWheels?: (types.EosWheel | null)[];
     private _colorHueSat?: types.EosColorHueSat | null;
     private _commandLine?: string;
     private _consoleState?: types.EosState;
@@ -47,7 +47,7 @@ export class EosConsole extends EventEmitter {
         return this._activeCue;
     }
 
-    get activeWheels(): readonly types.EosWheel[] | undefined {
+    get activeWheels(): readonly (types.EosWheel | null)[] | undefined {
         return this._activeWheels;
     }
 
@@ -515,11 +515,7 @@ export class EosConsole extends EventEmitter {
                 break;
             case 'active-wheel':
                 this._activeWheels ??= [];
-                this._activeWheels[output.wheelNumber - 1] = {
-                    category: output.category,
-                    parameter: output.parameter,
-                    value: output.value,
-                };
+                this._activeWheels[output.index] = output.wheel;
                 break;
             case 'cmd':
                 this._commandLine = output.commandLine;
@@ -547,7 +543,7 @@ export class EosConsole extends EventEmitter {
                 break;
             case 'soft-key':
                 this._softKeys ??= [];
-                this._softKeys[output.softKey - 1] = output.label;
+                this._softKeys[output.index] = output.label;
                 break;
             case 'state':
                 this._consoleState = output.state;

@@ -32,7 +32,6 @@ export interface EosWheel {
 }
 
 export type EosWheelCategory =
-    | null
     | 'intensity'
     | 'focus'
     | 'color'
