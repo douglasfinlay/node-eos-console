@@ -6,6 +6,7 @@ import {
     EosFocusXYZ,
     EosState,
     EosWheelCategory,
+    EosWheelMode,
 } from './eos-types';
 import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
@@ -31,7 +32,9 @@ export type EosImplicitOutput =
     | EosActiveChannelOutput
     | EosShowClearedOutput
     | EosShowLoadedOutput
-    | EosShowSavedOutput;
+    | EosShowSavedOutput
+    | EosCueFiredEvent
+    | EosWheelModeOutput;
 
 interface EosUserOutput {
     type: 'user';
@@ -147,6 +150,17 @@ interface EosShowSavedOutput {
     filePath: string;
 }
 
+interface EosCueFiredEvent {
+    type: 'cue-fired';
+    cue: EosCueIdentifier;
+    label: string;
+}
+
+interface EosWheelModeOutput {
+    type: 'wheel-mode' | 'switch-mode';
+    mode: EosWheelMode;
+}
+
 const STATE_LOOKUP: Record<number, EosState> = {
     0: 'blind',
     1: 'live',
@@ -160,6 +174,11 @@ const WHEEL_CATEGORY_LOOKUP: Record<number, EosWheelCategory> = {
     4: 'image',
     5: 'form',
     6: 'shutter',
+};
+
+const WHEEL_MODE_LOOKUP: Record<number, EosWheelMode> = {
+    0: 'coarse',
+    1: 'fine',
 };
 
 export const EOS_IMPLICIT_OUTPUT: Record<
@@ -234,9 +253,19 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     //
     // OSC Settings
     //
+    '/eos/out/switch': message => ({
+        type: 'switch-mode',
+        mode: WHEEL_MODE_LOOKUP[message.args[0]],
+    }),
+
     '/eos/out/user': message => ({
         type: 'user',
         userId: Number(message.args[0]),
+    }),
+
+    '/eos/out/wheel': message => ({
+        type: 'wheel-mode',
+        mode: WHEEL_MODE_LOOKUP[message.args[0]],
     }),
 
     //
@@ -342,6 +371,14 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     //
     // TODO: OSC Show Control Events
     //
+    '/eos/out/event/cue/{cueList}/{cueNumber}/fire': (message, params) => ({
+        type: 'cue-fired',
+        cue: {
+            cueList: Number(params.cueList),
+            cueNumber: Number(params.cueNumber),
+        },
+        label: message.args[0],
+    }),
 
     //
     // OSC Show File Information

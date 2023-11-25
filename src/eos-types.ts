@@ -39,3 +39,5 @@ export type EosWheelCategory =
     | 'image'
     | 'form'
     | 'shutter';
+
+export type EosWheelMode = 'coarse' | 'fine';
