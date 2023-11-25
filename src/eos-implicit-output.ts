@@ -14,14 +14,11 @@ export type EosImplicitOutput =
     | EosCmdOutput
     | EosUserCmdOutput
     | EosShowNameOutput
-    | EosActiveCueOutput
-    | EosPendingCueOutput
-    | EosPreviousCueOutput
-    | EosSoftkeyOutput
+    | EosCueOutput
+    | EosNullableCueOutput
+    | EosSoftKeyOutput
     | EosUserOutput
-    | EosActiveCueTextOutput
-    | EosPendingCueTextOutput
-    | EosPreviousCueTextOutput
+    | EosCueTextOutput
     | EosActiveCuePercentOutput
     | EosStateOutput
     | EosLockedOutput
@@ -31,8 +28,7 @@ export type EosImplicitOutput =
     | EosActiveWheelOutput
     | EosActiveChannelOutput
     | EosShowClearedOutput
-    | EosShowLoadedOutput
-    | EosShowSavedOutput
+    | EosShowFilePathOutput
     | EosCueFiredEvent
     | EosWheelModeOutput;
 
@@ -57,39 +53,24 @@ interface EosShowNameOutput {
     showName: string;
 }
 
-interface EosActiveCueOutput {
+interface EosCueOutput {
     type: 'active-cue';
     cue: EosCueIdentifier;
 }
 
-interface EosPendingCueOutput {
-    type: 'pending-cue';
+interface EosNullableCueOutput {
+    type: 'pending-cue' | 'previous-cue';
     cue: EosCueIdentifier | null;
 }
 
-interface EosPreviousCueOutput {
-    type: 'previous-cue';
-    cue: EosCueIdentifier | null;
-}
-
-interface EosSoftkeyOutput {
-    type: 'softkey';
-    softkey: number;
+interface EosSoftKeyOutput {
+    type: 'soft-key';
+    softKey: number;
     label: string;
 }
 
-interface EosActiveCueTextOutput {
-    type: 'active-cue-text';
-    text: string;
-}
-
-interface EosPendingCueTextOutput {
-    type: 'pending-cue-text';
-    text: string;
-}
-
-interface EosPreviousCueTextOutput {
-    type: 'previous-cue-text';
+interface EosCueTextOutput {
+    type: 'active-cue-text' | 'pending-cue-text' | 'previous-cue-text';
     text: string;
 }
 
@@ -140,13 +121,8 @@ interface EosShowClearedOutput {
     type: 'show-cleared';
 }
 
-interface EosShowLoadedOutput {
-    type: 'show-loaded';
-    filePath: string;
-}
-
-interface EosShowSavedOutput {
-    type: 'show-saved';
+interface EosShowFilePathOutput {
+    type: 'show-loaded' | 'show-saved';
     filePath: string;
 }
 
@@ -231,8 +207,8 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     }),
 
     '/eos/out/softkey/{softkey}': (message, params) => ({
-        type: 'softkey',
-        softkey: Number(params.softkey),
+        type: 'soft-key',
+        softKey: Number(params.softkey),
         label: message.args[0],
     }),
 

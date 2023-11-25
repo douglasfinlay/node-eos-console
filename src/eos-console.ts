@@ -545,9 +545,9 @@ export class EosConsole extends EventEmitter {
             case 'show-name':
                 this._showName = output.showName;
                 break;
-            case 'softkey':
+            case 'soft-key':
                 this._softKeys ??= [];
-                this._softKeys[output.softkey - 1] = output.label;
+                this._softKeys[output.softKey - 1] = output.label;
                 break;
             case 'state':
                 this._consoleState = output.state;
