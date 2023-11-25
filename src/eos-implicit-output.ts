@@ -1,6 +1,7 @@
 import { EosOscMessage } from './eos-osc-stream';
 import {
     EosColorHueSat,
+    EosCueIdentifier,
     EosFocusPanTilt,
     EosFocusXYZ,
     EosState,
@@ -55,20 +56,17 @@ interface EosShowNameOutput {
 
 interface EosActiveCueOutput {
     type: 'active-cue';
-    cueList: TargetNumber;
-    cueNumber: TargetNumber;
+    cue: EosCueIdentifier;
 }
 
 interface EosPendingCueOutput {
     type: 'pending-cue';
-    cueList: TargetNumber;
-    cueNumber: TargetNumber;
+    cue: EosCueIdentifier | null;
 }
 
 interface EosPreviousCueOutput {
     type: 'previous-cue';
-    cueList: TargetNumber;
-    cueNumber: TargetNumber;
+    cue: EosCueIdentifier | null;
 }
 
 interface EosSoftkeyOutput {
@@ -281,8 +279,10 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     //
     '/eos/out/active/cue/{cueList}/{cueNumber}': (_, params) => ({
         type: 'active-cue',
-        cueList: Number(params.cueList),
-        cueNumber: Number(params.cueNumber),
+        cue: {
+            cueList: Number(params.cueList),
+            cueNumber: Number(params.cueNumber),
+        },
     }),
 
     '/eos/out/active/cue': message => ({
@@ -295,10 +295,17 @@ export const EOS_IMPLICIT_OUTPUT: Record<
         text: message.args[0],
     }),
 
+    '/eos/out/pending/cue': () => ({
+        type: 'pending-cue',
+        cue: null,
+    }),
+
     '/eos/out/pending/cue/{cueList}/{cueNumber}': (_, params) => ({
         type: 'pending-cue',
-        cueList: Number(params.cueList),
-        cueNumber: Number(params.cueNumber),
+        cue: {
+            cueList: Number(params.cueList),
+            cueNumber: Number(params.cueNumber),
+        },
     }),
 
     '/eos/out/pending/cue/text': message => ({
@@ -306,10 +313,17 @@ export const EOS_IMPLICIT_OUTPUT: Record<
         text: message.args[0],
     }),
 
+    '/eos/out/previous/cue': () => ({
+        type: 'previous-cue',
+        cue: null,
+    }),
+
     '/eos/out/previous/cue/{cueList}/{cueNumber}': (_, params) => ({
         type: 'previous-cue',
-        cueList: Number(params.cueList),
-        cueNumber: Number(params.cueNumber),
+        cue: {
+            cueList: Number(params.cueList),
+            cueNumber: Number(params.cueNumber),
+        },
     }),
 
     '/eos/out/previous/cue/text': message => ({

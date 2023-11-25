@@ -33,8 +33,8 @@ export class EosConsole extends EventEmitter {
     private _focusPanTilt?: types.EosFocusPanTilt | null;
     private _focusXYZ?: types.EosFocusXYZ | null;
     private _locked?: boolean;
-    private _pendingCue?: types.EosCueIdentifier;
-    private _previousCue?: types.EosCueIdentifier;
+    private _pendingCue?: types.EosCueIdentifier | null;
+    private _previousCue?: types.EosCueIdentifier | null;
     private _showName?: string;
     private _softKeys?: string[];
     private _version?: string;
@@ -511,10 +511,7 @@ export class EosConsole extends EventEmitter {
                 this._activeChannels = output.channels;
                 break;
             case 'active-cue':
-                this._activeCue = {
-                    cueList: output.cueList,
-                    cueNumber: output.cueNumber,
-                };
+                this._activeCue = output.cue;
                 break;
             case 'active-wheel':
                 this._activeWheels ??= [];
@@ -540,16 +537,10 @@ export class EosConsole extends EventEmitter {
                 this._locked = output.locked;
                 break;
             case 'pending-cue':
-                this._pendingCue = {
-                    cueList: output.cueList,
-                    cueNumber: output.cueNumber,
-                };
+                this._pendingCue = output.cue;
                 break;
             case 'previous-cue':
-                this._previousCue = {
-                    cueList: output.cueList,
-                    cueNumber: output.cueNumber,
-                };
+                this._previousCue = output.cue;
                 break;
             case 'show-name':
                 this._showName = output.showName;
