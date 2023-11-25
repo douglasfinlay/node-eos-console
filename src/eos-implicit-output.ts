@@ -30,8 +30,11 @@ export type EosImplicitOutput =
     | EosActiveChannelOutput
     | EosShowClearedOutput
     | EosShowFilePathOutput
-    | EosCueFiredEvent
-    | EosWheelModeOutput;
+    | EosCuePlaybackEvent
+    | EosWheelModeOutput
+    | EosMacroEvent
+    | EosSubEvent
+    | EosRelayEvent;
 
 interface EosUserOutput {
     type: 'user';
@@ -125,8 +128,8 @@ interface EosShowFilePathOutput {
     filePath: string;
 }
 
-interface EosCueFiredEvent {
-    type: 'cue-fired';
+interface EosCuePlaybackEvent {
+    type: 'cue-fired' | 'cue-stopped';
     cue: EosCueIdentifier;
     label: string;
 }
@@ -134,6 +137,24 @@ interface EosCueFiredEvent {
 interface EosWheelModeOutput {
     type: 'wheel-mode' | 'switch-mode';
     mode: EosWheelMode;
+}
+
+interface EosMacroEvent {
+    type: 'macro-fired';
+    macro: TargetNumber;
+}
+
+interface EosSubEvent {
+    type: 'sub-bumped';
+    sub: TargetNumber;
+    bump: boolean;
+}
+
+interface EosRelayEvent {
+    type: 'relay-state';
+    group: number;
+    relay: number;
+    active: boolean;
 }
 
 const STATE_LOOKUP: Record<number, EosState> = {
@@ -352,7 +373,7 @@ export const EOS_IMPLICIT_OUTPUT: Record<
     //
 
     //
-    // TODO: OSC Show Control Events
+    // OSC Show Control Events
     //
     '/eos/out/event/cue/{cueList}/{cueNumber}/fire': (message, params) => ({
         type: 'cue-fired',
@@ -361,6 +382,33 @@ export const EOS_IMPLICIT_OUTPUT: Record<
             cueNumber: Number(params.cueNumber),
         },
         label: message.args[0],
+    }),
+
+    '/eos/out/event/cue/{cueList}/{cueNumber}/stop': (message, params) => ({
+        type: 'cue-stopped',
+        cue: {
+            cueList: Number(params.cueList),
+            cueNumber: Number(params.cueNumber),
+        },
+        label: message.args[0],
+    }),
+
+    '/eos/out/event/macro/{macroNumber}': (_, params) => ({
+        type: 'macro-fired',
+        macro: Number(params.macroNumber),
+    }),
+
+    '/eos/out/event/relay/{relayNumber}/{groupNumber}': (message, params) => ({
+        type: 'relay-state',
+        active: !!message.args[0],
+        group: Number(params.groupNumber),
+        relay: Number(params.relayNumber),
+    }),
+
+    '/eos/out/event/sub/{subNumber}': (message, params) => ({
+        type: 'sub-bumped',
+        sub: Number(params.subNumber),
+        bump: !!message.args[0],
     }),
 
     //
