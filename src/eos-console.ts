@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
-import { EosOscMessage, EosOscStream } from './eos-osc-stream';
+import { EosOscArg, EosOscStream } from './eos-osc-stream';
 import {
     Channel,
     ChannelPart,
@@ -180,10 +180,7 @@ export class EosConsole extends EventEmitter {
     }
 
     async changeUser(userId: number) {
-        await this.socket?.writeOsc({
-            address: '/eos/user',
-            args: [userId],
-        });
+        await this.sendMessage('/eos/user', [userId]);
     }
 
     async executeCommand(
@@ -191,21 +188,12 @@ export class EosConsole extends EventEmitter {
         substitutions: string[] = [],
         newCommand = true,
     ) {
-        const msg: EosOscMessage = {
-            address: newCommand ? '/eos/newcmd' : '/eos/cmd',
-            args: [command, ...substitutions],
-        };
-
-        await this.socket?.writeOsc(msg);
+        const address = newCommand ? '/eos/newcmd' : '/eos/cmd';
+        await this.sendMessage(address, [command, ...substitutions]);
     }
 
     async fireCue(cueListNumber: TargetNumber, cueNumber: TargetNumber) {
-        const msg: EosOscMessage = {
-            address: `/eos/cue/${cueListNumber}/${cueNumber}/fire`,
-            args: [],
-        };
-
-        await this.socket?.writeOsc(msg);
+        await this.sendMessage(`/eos/cue/${cueListNumber}/${cueNumber}/fire`);
     }
 
     async getCue(cueList: TargetNumber, targetNumber: TargetNumber) {
@@ -428,6 +416,18 @@ export class EosConsole extends EventEmitter {
         );
     }
 
+    async sendMessage(address: string, args: EosOscArg[] = []) {
+        if (!address.startsWith('/eos/')) {
+            throw new Error('message must start with "/eos/"');
+        } else if (address.startsWith('/eos/get/')) {
+            throw new Error(
+                '"/eos/get/" messages can only be sent by the request manager',
+            );
+        }
+
+        await this.socket?.writeOsc({ address, args });
+    }
+
     private async getRecordTargetList<
         TTargetType extends Exclude<RecordTargetType, 'cue'>,
     >(
@@ -593,15 +593,12 @@ export class EosConsole extends EventEmitter {
     }
 
     private async subscribe(subscribe = true) {
-        await this.socket?.writeOsc({
-            address: '/eos/subscribe',
-            args: [
-                {
-                    type: 'integer',
-                    value: +subscribe,
-                },
-            ],
-        });
+        await this.sendMessage('/eos/subscribe', [
+            {
+                type: 'integer',
+                value: +subscribe,
+            },
+        ]);
     }
 
     private async request<T>(request: requests.EosRequest<T>): Promise<T> {
