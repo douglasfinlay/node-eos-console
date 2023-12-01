@@ -463,7 +463,7 @@ export class EosConsole extends EventEmitter {
     }
 
     // FIXME: this only exists to allow some quick and dirty testing!
-    emit(eventName: string | symbol, ...args: unknown[]): boolean {
+    override emit(eventName: string | symbol, ...args: unknown[]): boolean {
         console.log(
             `Event: ${String(eventName)} - ${args
                 .map(a => inspect(a))

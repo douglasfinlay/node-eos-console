@@ -58,7 +58,7 @@ export class EosOscStream extends Duplex {
         });
     }
 
-    _destroy(
+    override _destroy(
         error: Error | null,
         callback: (error: Error | null) => void,
     ): void {
@@ -66,7 +66,7 @@ export class EosOscStream extends Duplex {
         callback(null);
     }
 
-    _write(
+    override _write(
         chunk: osc.Packet,
         encoding: BufferEncoding,
         callback: (error?: Error | null) => void,
@@ -77,7 +77,7 @@ export class EosOscStream extends Duplex {
         this.socket.write(buffer, encoding, callback);
     }
 
-    _read() {
+    override _read() {
         this.readingPaused = false;
         setImmediate(this.onReadable.bind(this));
     }

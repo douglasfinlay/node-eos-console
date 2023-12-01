@@ -176,13 +176,14 @@ const WHEEL_MODE_LOOKUP: Record<number, EosWheelMode> = {
     1: 'fine',
 };
 
-export const EOS_IMPLICIT_OUTPUT: Record<
-    string,
-    (
-        message: EosOscMessage,
-        params: Record<string, string>,
-    ) => EosImplicitOutput
-> = {
+type ImplicitOutputHandler = (
+    message: EosOscMessage,
+    params: Record<string, string>,
+) => EosImplicitOutput;
+
+type ImplicitOutput = Record<string, ImplicitOutputHandler>;
+
+export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     '/eos/out/color/hs': message => ({
         type: 'color-hs',
         color:
