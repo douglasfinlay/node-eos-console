@@ -1,5 +1,6 @@
 export * from './discovery';
 export * from './eos-console';
+export { EosCueIdentifier } from './eos-types';
 export {
     Channel,
     ChannelPart,
