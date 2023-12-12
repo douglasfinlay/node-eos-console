@@ -18,6 +18,11 @@ import * as types from './eos-types';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
+export type GetRecordTargetListProgressCallback = (
+    complete: number,
+    total: number,
+) => void;
+
 export class EosConsole extends EventEmitter {
     private _connectionState: EosConnectionState = 'disconnected';
     private router = new OscRouter();
@@ -200,17 +205,31 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosCueRequest.get(targetNumber, cueList));
     }
 
-    async getCues(cueList: TargetNumber) {
-        const count = await this.request(
+    async getCues(
+        cueList: TargetNumber,
+        progressCallback?: GetRecordTargetListProgressCallback,
+    ) {
+        const total = await this.request(
             new requests.EosRecordTargetCountRequest('cue', cueList),
         );
 
-        const cueRequests: Promise<Cue | null>[] = new Array(count);
+        if (total === 0) {
+            return [];
+        }
 
-        for (let i = 0; i < count; i++) {
+        let completedCount = 0;
+
+        const cueRequests: Promise<Cue | null>[] = new Array(total);
+
+        for (let i = 0; i < total; i++) {
             cueRequests[i] = this.request(
                 requests.EosCueRequest.index(i, cueList),
-            );
+            ).then(cue => {
+                completedCount += 1;
+                progressCallback?.(completedCount, total);
+
+                return cue;
+            });
         }
 
         const cues = await Promise.all(cueRequests);
@@ -228,9 +247,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosCueListRequest.get(targetNumber));
     }
 
-    async getCueLists() {
-        return this.getRecordTargetList('cuelist', i =>
-            requests.EosCueListRequest.index(i),
+    async getCueLists(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'cuelist',
+            i => requests.EosCueListRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -238,9 +259,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosCurveRequest.get(targetNumber));
     }
 
-    async getCurves() {
-        return this.getRecordTargetList('curve', i =>
-            requests.EosCurveRequest.index(i),
+    async getCurves(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'curve',
+            i => requests.EosCurveRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -248,9 +271,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosGroupRequest.get(targetNumber));
     }
 
-    async getGroups() {
-        return this.getRecordTargetList('group', i =>
-            requests.EosGroupRequest.index(i),
+    async getGroups(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'group',
+            i => requests.EosGroupRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -258,9 +283,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosEffectRequest.get(targetNumber));
     }
 
-    async getEffects() {
-        return this.getRecordTargetList('fx', i =>
-            requests.EosEffectRequest.index(i),
+    async getEffects(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'fx',
+            i => requests.EosEffectRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -268,9 +295,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosMacroRequest.get(targetNumber));
     }
 
-    async getMacros() {
-        return this.getRecordTargetList('macro', i =>
-            requests.EosMacroRequest.index(i),
+    async getMacros(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'macro',
+            i => requests.EosMacroRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -278,9 +307,13 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosMagicSheetRequest.get(targetNumber));
     }
 
-    async getMagicSheets() {
-        return this.getRecordTargetList('ms', i =>
-            requests.EosMagicSheetRequest.index(i),
+    async getMagicSheets(
+        progressCallback?: GetRecordTargetListProgressCallback,
+    ) {
+        return this.getRecordTargetList(
+            'ms',
+            i => requests.EosMagicSheetRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -317,9 +350,11 @@ export class EosConsole extends EventEmitter {
         ]);
     }
 
-    async getPatch() {
-        const patch = await this.getRecordTargetList('patch', i =>
-            requests.EosPatchRequest.index(i),
+    async getPatch(progressCallback?: GetRecordTargetListProgressCallback) {
+        const patch = await this.getRecordTargetList(
+            'patch',
+            i => requests.EosPatchRequest.index(i),
+            progressCallback,
         );
 
         const patchByTargetNumber = patch.reduce<Record<number, Patch[]>>(
@@ -340,9 +375,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosPresetRequest.get(targetNumber));
     }
 
-    async getPresets() {
-        return this.getRecordTargetList('preset', i =>
-            requests.EosPresetRequest.index(i),
+    async getPresets(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'preset',
+            i => requests.EosPresetRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -350,9 +387,13 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosPaletteRequest.get(targetNumber, 'ip'));
     }
 
-    async getIntensityPalettes() {
-        return this.getRecordTargetList('ip', i =>
-            requests.EosPaletteRequest.index(i, 'ip'),
+    async getIntensityPalettes(
+        progressCallback?: GetRecordTargetListProgressCallback,
+    ) {
+        return this.getRecordTargetList(
+            'ip',
+            i => requests.EosPaletteRequest.index(i, 'ip'),
+            progressCallback,
         );
     }
 
@@ -360,9 +401,13 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosPaletteRequest.get(targetNumber, 'fp'));
     }
 
-    async getFocusPalettes() {
-        return this.getRecordTargetList('fp', i =>
-            requests.EosPaletteRequest.index(i, 'fp'),
+    async getFocusPalettes(
+        progressCallback?: GetRecordTargetListProgressCallback,
+    ) {
+        return this.getRecordTargetList(
+            'fp',
+            i => requests.EosPaletteRequest.index(i, 'fp'),
+            progressCallback,
         );
     }
 
@@ -370,9 +415,13 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosPaletteRequest.get(targetNumber, 'cp'));
     }
 
-    async getColorPalettes() {
-        return this.getRecordTargetList('cp', i =>
-            requests.EosPaletteRequest.index(i, 'cp'),
+    async getColorPalettes(
+        progressCallback?: GetRecordTargetListProgressCallback,
+    ) {
+        return this.getRecordTargetList(
+            'cp',
+            i => requests.EosPaletteRequest.index(i, 'cp'),
+            progressCallback,
         );
     }
 
@@ -380,9 +429,13 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosPaletteRequest.get(targetNumber, 'bp'));
     }
 
-    async getBeamPalettes() {
-        return this.getRecordTargetList('bp', i =>
-            requests.EosPaletteRequest.index(i, 'bp'),
+    async getBeamPalettes(
+        progressCallback?: GetRecordTargetListProgressCallback,
+    ) {
+        return this.getRecordTargetList(
+            'bp',
+            i => requests.EosPaletteRequest.index(i, 'bp'),
+            progressCallback,
         );
     }
 
@@ -390,9 +443,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosPixelMapRequest.get(targetNumber));
     }
 
-    async getPixmaps() {
-        return this.getRecordTargetList('pixmap', i =>
-            requests.EosPixelMapRequest.index(i),
+    async getPixmaps(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'pixmap',
+            i => requests.EosPixelMapRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -400,9 +455,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosSnapshotRequest.get(targetNumber));
     }
 
-    async getSnapshots() {
-        return this.getRecordTargetList('snap', i =>
-            requests.EosSnapshotRequest.index(i),
+    async getSnapshots(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'snap',
+            i => requests.EosSnapshotRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -410,9 +467,11 @@ export class EosConsole extends EventEmitter {
         return this.request(requests.EosSubRequest.get(targetNumber));
     }
 
-    async getSubs() {
-        return this.getRecordTargetList('sub', i =>
-            requests.EosSubRequest.index(i),
+    async getSubs(progressCallback?: GetRecordTargetListProgressCallback) {
+        return this.getRecordTargetList(
+            'sub',
+            i => requests.EosSubRequest.index(i),
+            progressCallback,
         );
     }
 
@@ -435,20 +494,30 @@ export class EosConsole extends EventEmitter {
         indexRequestFactory: (
             index: number,
         ) => requests.EosRecordTargetRequest<RecordTargets[TTargetType]>,
+        progressCallback?: GetRecordTargetListProgressCallback,
     ) {
-        const count = await this.request(
+        const total = await this.request(
             new requests.EosRecordTargetCountRequest(targetType),
         );
 
-        if (count === 0) {
+        if (total === 0) {
             return [];
         }
 
-        const requestPromises: Promise<RecordTargets[TTargetType] | null>[] =
-            new Array(count);
+        let completedCount = 0;
 
-        for (let i = 0; i < count; i++) {
-            requestPromises[i] = this.request(indexRequestFactory(i));
+        const requestPromises: Promise<RecordTargets[TTargetType] | null>[] =
+            new Array(total);
+
+        for (let i = 0; i < total; i++) {
+            requestPromises[i] = this.request(indexRequestFactory(i)).then(
+                recordTarget => {
+                    completedCount += 1;
+                    progressCallback?.(completedCount, total);
+
+                    return recordTarget;
+                },
+            );
         }
 
         const recordTargets = await Promise.all(requestPromises);
