@@ -15,8 +15,23 @@ import * as requests from './request';
 import { OscRouter } from './osc-router';
 import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
 import * as types from './eos-types';
+import { LogHandler } from './log';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
+
+export interface EosConsoleOptions {
+    /**
+     * @default 'localhost'
+     */
+    host?: string;
+
+    logging?: LogHandler;
+
+    /**
+     * @default 3037
+     */
+    port?: number;
+}
 
 export type GetRecordTargetListProgressCallback = (
     complete: number,
@@ -25,8 +40,9 @@ export type GetRecordTargetListProgressCallback = (
 
 export class EosConsole extends EventEmitter {
     private _connectionState: EosConnectionState = 'disconnected';
-    private router = new OscRouter();
+    private log?: LogHandler;
     private requestManager = new RequestManager();
+    private router;
     private socket: EosOscStream | null = null;
 
     private _activeChannels?: readonly TargetNumber[];
@@ -43,6 +59,9 @@ export class EosConsole extends EventEmitter {
     private _showName?: string;
     private _softKeys?: string[];
     private _version?: string;
+
+    readonly host: string;
+    readonly port: number;
 
     get activeChannels() {
         return this._activeChannels;
@@ -104,17 +123,25 @@ export class EosConsole extends EventEmitter {
         return this._version;
     }
 
-    constructor(
-        public readonly host: string,
-        public readonly port = 3037,
-    ) {
+    constructor(options?: EosConsoleOptions) {
         super();
 
+        this.host = options?.host ?? 'localhost';
+        this.port = options?.port ?? 3037;
+
+        if (options?.logging) {
+            this.log = options.logging;
+        }
+
+        this.router = new OscRouter(this.log);
         this.initRoutes();
     }
 
     async connect(timeout = 5000) {
-        console.log(`Connecting to EOS console at ${this.host}:${this.port}`);
+        this.log?.(
+            'info',
+            `Connecting to Eos console at ${this.host}:${this.port}`,
+        );
 
         this._connectionState = 'connecting';
         this.emit('connecting');
@@ -144,7 +171,7 @@ export class EosConsole extends EventEmitter {
             this.socket?.off('error', handleConnectError);
 
             this.socket?.once('close', () => {
-                console.log('EOS connection closed');
+                this.log?.('info', 'Eos connection closed');
 
                 this._connectionState = 'disconnected';
                 this.emit('disconnect');
@@ -156,24 +183,24 @@ export class EosConsole extends EventEmitter {
             this.socket?.on('error', this.handleOscError.bind(this));
             this.socket?.on('data', this.router.route.bind(this.router));
 
-            console.log('Connected');
+            this.log?.('info', 'Connected');
 
             this._connectionState = 'connected';
             this.emit('connect');
 
             const version = await this.getVersion();
-            console.log(`Eos version ${version}`);
+            this.log?.('info', `Eos version ${version}`);
 
             await this.subscribe();
         };
 
-        this.socket = EosOscStream.connect(this.host, this.port);
+        this.socket = EosOscStream.connect(this.host, this.port, this.log);
         this.socket.once('error', handleConnectError);
         this.socket.once('ready', handleReady);
     }
 
     disconnect() {
-        console.log('Disconnecting from EOS console');
+        this.log?.('info', 'Disconnecting from Eos console');
 
         this.socket?.destroy();
 
@@ -533,11 +560,14 @@ export class EosConsole extends EventEmitter {
 
     // FIXME: this only exists to allow some quick and dirty testing!
     override emit(eventName: string | symbol, ...args: unknown[]): boolean {
-        console.log(
-            `Event: ${String(eventName)} - ${args
-                .map(a => inspect(a))
-                .join(', ')}`,
-        );
+        if (eventName !== 'log') {
+            this.log?.(
+                'verbose',
+                `Event: ${String(eventName)} - ${args
+                    .map(a => inspect(a))
+                    .join(', ')}`,
+            );
+        }
 
         return super.emit(eventName, ...args);
     }
@@ -569,7 +599,7 @@ export class EosConsole extends EventEmitter {
     }
 
     private handleOscError(err: Error) {
-        console.error('OSC connection error:', err);
+        this.log?.('error', `OSC connection error: ${err.message}`);
     }
 
     private updateStateFromImplicitOutput(output: EosImplicitOutput) {
@@ -621,6 +651,8 @@ export class EosConsole extends EventEmitter {
     }
 
     private initRoutes() {
+        this.log?.('debug', 'Initialising OSC routes');
+
         for (const [route, handler] of Object.entries(EOS_IMPLICIT_OUTPUT)) {
             this.router.on(route, (message, params) => {
                 const implicitOutput = handler(message, params);
@@ -649,14 +681,17 @@ export class EosConsole extends EventEmitter {
                     message.args.slice(1),
                 );
             })
-            .on('/eos/*', message =>
-                console.warn(
-                    `Unhandled OSC message "${
-                        message.address
-                    }", args: [ ${message.args
-                        .map(arg => JSON.stringify(arg))
-                        .join(',')} ]`,
-                ),
+            .on(
+                '/eos/*',
+                message =>
+                    this.log?.(
+                        'warn',
+                        `Unhandled OSC message "${
+                            message.address
+                        }", args: [ ${message.args
+                            .map(arg => JSON.stringify(arg))
+                            .join(',')} ]`,
+                    ),
             )
             .on('/*', message => this.emit('osc', message));
     }

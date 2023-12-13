@@ -1,4 +1,5 @@
 import { EosOscMessage } from './eos-osc-stream';
+import { LogHandler } from './log';
 
 export type OscRouteHandler = (
     message: EosOscMessage,
@@ -36,6 +37,8 @@ interface OscWildcardTreeNode extends OscTreeNode {
  */
 export class OscRouter {
     private rootNode: OscTreeNode = { type: 'root', value: '' };
+
+    constructor(private log?: LogHandler) {}
 
     on(addressPattern: string, handler: OscRouteHandler): this {
         // TODO: validate addressPattern
@@ -110,6 +113,8 @@ export class OscRouter {
 
         currentNode.handler = handler;
 
+        this.log?.('debug', `Registered route "${addressPattern}"`);
+
         return this;
     }
 
@@ -119,6 +124,7 @@ export class OscRouter {
         let foundWildcardHandler: OscRouteHandler | undefined;
         let fullMatch = true;
         const collectedParams: Record<string, string> = {};
+        const debugSegments: string[] = [];
 
         const segments = message.address.split('/').slice(1);
 
@@ -131,11 +137,15 @@ export class OscRouter {
 
             if (currentNode.childLiterals?.[segment]) {
                 currentNode = currentNode.childLiterals[segment];
+
+                debugSegments.push(segment);
             } else if (currentNode.childParam) {
                 const param = currentNode.childParam.value;
 
                 collectedParams[param] = segment;
                 currentNode = currentNode.childParam;
+
+                debugSegments.push(`{${param}}`);
             } else {
                 fullMatch = false;
                 break;
@@ -149,9 +159,23 @@ export class OscRouter {
         let handled = false;
 
         if (foundHandler) {
+            this.log?.(
+                'debug',
+                `Message "${
+                    message.address
+                }" matched to route "/${debugSegments.join('/')}"`,
+            );
+
             foundHandler(message, collectedParams);
             handled = true;
         } else if (foundWildcardHandler) {
+            this.log?.(
+                'debug',
+                `Message "${
+                    message.address
+                }" matched to route "/${debugSegments.join('/')}/*"`,
+            );
+
             foundWildcardHandler(message, collectedParams);
             handled = true;
         }
@@ -200,6 +224,7 @@ export class OscRouter {
         const label = node.type === 'param' ? `{${node.value}}` : node.value;
         const suffix = isLeaf ? '' : '/';
 
+        // eslint-disable-next-line no-console
         console.log(`${prefix}${controlStart}${label}${controlEnd}${suffix}`);
 
         const children: OscTreeNode[] = [];

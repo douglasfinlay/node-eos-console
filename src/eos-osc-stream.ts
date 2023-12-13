@@ -2,6 +2,7 @@ import { Socket, createConnection } from 'node:net';
 import { Duplex } from 'node:stream';
 import * as osc from 'osc-min';
 import * as slip from 'slip';
+import { LogHandler } from './log';
 
 /**
  * Regular expression to match an OSC list-convention address ending with `/list/<list index>/<list count>`.
@@ -30,20 +31,23 @@ export class EosOscStream extends Duplex {
 
     private slipDecoder = new slip.Decoder({
         onError: (_msgBuffer: Uint8Array, errMsg: string) =>
-            console.error(`SLIP decoder error: ${errMsg}`),
+            this.log?.('error', `SLIP decoder error: ${errMsg}`),
         onMessage: this.onSlipFrameReceived.bind(this),
     });
 
-    constructor(private socket: Socket) {
+    constructor(
+        private socket: Socket,
+        private log?: LogHandler,
+    ) {
         super({ objectMode: true });
 
         this.wrapSocket();
     }
 
-    static connect(host: string, port = 3037) {
+    static connect(host: string, port = 3037, log?: LogHandler) {
         const socket = createConnection(port, host);
 
-        return new EosOscStream(socket);
+        return new EosOscStream(socket, log);
     }
 
     async writeOsc(msg: EosOscMessage) {
@@ -74,6 +78,8 @@ export class EosOscStream extends Duplex {
         const data = osc.toBuffer(chunk);
         const buffer = slip.encode(data);
 
+        this.log?.('debug', `Write: ${JSON.stringify(chunk)}`);
+
         this.socket.write(buffer, encoding, callback);
     }
 
@@ -96,12 +102,14 @@ export class EosOscStream extends Duplex {
         try {
             packet = osc.fromBuffer(frame);
         } catch (err) {
-            console.error('Malformed OSC packet:', err);
+            this.log?.('error', `Malformed OSC packet: ${err}`);
             return;
         }
 
+        this.log?.('debug', `Read: ${JSON.stringify(packet)}`);
+
         if (packet.oscType === 'bundle') {
-            console.warn('Ignoring OSC bundle');
+            this.log?.('warn', 'Ignoring OSC bundle');
             return;
         }
 
@@ -137,7 +145,8 @@ export class EosOscStream extends Duplex {
                 const cachedArgs = this.argumentListCache.get(msg.address);
 
                 if (!cachedArgs) {
-                    console.error(
+                    this.log?.(
+                        'error',
                         `no arg cache entry found for "${msg.address}"`,
                     );
                     return;
