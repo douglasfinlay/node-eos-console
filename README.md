@@ -41,7 +41,7 @@ discovery.start();
 ```ts
 import { EosConsole } from 'eos-console';
 
-const eos = new EosConsole('localhost');
+const eos = new EosConsole({ host: 'localhost', port: 3037 });
 await eos.connect();
 // ...
 await eos.disconnect();
@@ -80,6 +80,17 @@ eos.on('current-cue', (cueList, cueNumber) => { /* ... */ });
 
 ```ts
 eos.on('osc', ({address, args}) => { /* ... */ });
+```
+
+### Logging
+
+By default the library will not produce any log output. To enable logging,
+provide a log handler via the constructor.
+
+```ts
+const eos = new EosConsole({
+    logging: (level, message) => console.log(`[${level}] ${message}`),
+});
 ```
 
 ## To Do
