@@ -12,7 +12,7 @@
     "plugins": ["@typescript-eslint", "prettier"],
     "root": true,
     "rules": {
-        "no-console": "warn",
+        "no-console": "error",
         "prettier/prettier": "error",
         "@typescript-eslint/no-unused-vars": "warn"
     }
