@@ -3,11 +3,7 @@ import { Duplex } from 'node:stream';
 import * as osc from 'osc-min';
 import * as slip from 'slip';
 import { LogHandler } from './log';
-
-/**
- * Regular expression to match an OSC list-convention address ending with `/list/<list index>/<list count>`.
- */
-const EOS_OSC_LIST_ADDRESS = /\/list\/(\d+)\/(\d+)$/;
+import { OscArgumentListJoiner } from './osc-argument-list-joiner';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type EosOscArg = any;
@@ -20,12 +16,14 @@ export interface EosOscMessage {
 /**
  * A SLIP-encoded OSC message stream.
  *
- * Messages split using the Eos OSC list convention will be held until all parts have been received. Once a complete
- * message is received, it will be emitted as a single message without the list convention address parts (without the
- * `/list/<list index>/<list count>` suffix).
+ * Messages split using the Eos OSC list convention will be held until all parts
+ * have been received (@see {@link OscArgumentListJoiner}). Once a complete
+ * message is received, it will be emitted as a single message without the list
+ * convention address parts (without the `/list/<list index>/<list count>`
+ * suffix).
  */
 export class EosOscStream extends Duplex {
-    private argumentListCache = new Map<string, EosOscArg[]>();
+    private argumentListJoiner = new OscArgumentListJoiner();
 
     private readingPaused = false;
 
@@ -108,67 +106,28 @@ export class EosOscStream extends Duplex {
 
         this.log?.('debug', `Read: ${JSON.stringify(packet)}`);
 
-        if (packet.oscType === 'bundle') {
-            this.log?.('warn', 'Ignoring OSC bundle');
+        if (!isOscMessage(packet)) {
+            this.log?.('warn', `Ignoring OSC ${packet.oscType}`);
             return;
         }
 
-        // Flatten the message arguments and omit unnecessary fields
-        const msg: EosOscMessage = {
-            address: (packet as osc.Message).address,
-            args: (packet as osc.Message).args.map(arg => arg.value),
-        };
-
-        this.onMessageReceived(msg);
+        this.onMessageReceived({
+            address: packet.address,
+            args: packet.args.map(arg => arg.value),
+        });
     }
 
-    private onMessageReceived(msg: EosOscMessage) {
-        const matches = EOS_OSC_LIST_ADDRESS.exec(msg.address);
+    private onMessageReceived(message: EosOscMessage) {
+        const fullMessage = this.argumentListJoiner.process(message);
 
-        if (matches) {
-            // Strip the `/list/<list index>/<list count>` suffix
-            msg.address = msg.address.substring(0, matches.index);
-
-            const argListCount = parseInt(matches[2]);
-
-            // If a partial set of args has been received, cache them and wait for more messages
-            if (msg.args.length < argListCount) {
-                const argListIndex = parseInt(matches[1]);
-
-                if (argListIndex === 0) {
-                    // First message; create a cache entry with the partial argument list
-                    this.argumentListCache.set(msg.address, msg.args);
-                    return;
-                }
-
-                // Otherwise keep collecting args until we have received the expected amount
-                const cachedArgs = this.argumentListCache.get(msg.address);
-
-                if (!cachedArgs) {
-                    this.log?.(
-                        'error',
-                        `no arg cache entry found for "${msg.address}"`,
-                    );
-                    return;
-                }
-
-                // Accumulate args
-                cachedArgs.splice(argListIndex, msg.args.length, ...msg.args);
-
-                if (cachedArgs.length < argListCount) {
-                    // Don't release the message yet as we're expecting more args
-                    return;
-                }
-
-                // At this point all args have been received, so release the message with its full argument set and
-                // remove from the cache
-                msg.args = cachedArgs;
-                this.argumentListCache.delete(msg.address);
-            }
+        if (fullMessage) {
+            this.releaseMessage(fullMessage);
         }
+    }
 
+    private releaseMessage(message: EosOscMessage) {
         // Add message to read buffer
-        const hasSpace = this.push(msg);
+        const hasSpace = this.push(message);
 
         // Pause reading if consumer is slow
         if (!hasSpace) {
@@ -191,3 +150,7 @@ export class EosOscStream extends Duplex {
         this.socket.on('readable', this.onReadable.bind(this));
     }
 }
+
+const isOscMessage = (packet: osc.Packet): packet is osc.Message => {
+    return packet.oscType === 'message';
+};
