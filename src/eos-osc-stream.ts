@@ -87,9 +87,12 @@ export class EosOscStream extends Duplex {
     }
 
     private onReadable() {
-        let chunk: osc.Packet;
+        let chunk: Buffer | null;
 
-        while (null !== (chunk = this.socket.read()) && !this.readingPaused) {
+        while (
+            null !== (chunk = this.socket.read() as typeof chunk) &&
+            !this.readingPaused
+        ) {
             this.slipDecoder.decode(chunk);
         }
     }
