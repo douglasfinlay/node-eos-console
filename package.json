@@ -15,7 +15,7 @@
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
     "prepack": "npm run build",
-    "test": "mocha -r ts-node/register src/**/*.test.ts"
+    "test": "TS_NODE_FILES=1 mocha -r ts-node/register src/**/*.test.ts"
   },
   "repository": {
     "type": "git",
