@@ -1,6 +1,11 @@
 import { EventEmitter } from 'node:events';
 import { inspect } from 'node:util';
-import { EosOscArg, EosOscStream } from './eos-osc-stream';
+import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
+import { EosOscStream } from './eos-osc-stream';
+import * as types from './eos-types';
+import { LogHandler } from './log';
+import { OscArgument, OscMessage } from './osc';
+import { OscRouter } from './osc-router';
 import {
     Channel,
     ChannelPart,
@@ -9,13 +14,9 @@ import {
     RecordTargetType,
     RecordTargets,
 } from './record-targets';
+import * as requests from './request';
 import { RequestManager } from './request-manager';
 import { TargetNumber, expandTargetNumberArguments } from './target-number';
-import * as requests from './request';
-import { OscRouter } from './osc-router';
-import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
-import * as types from './eos-types';
-import { LogHandler } from './log';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -502,7 +503,7 @@ export class EosConsole extends EventEmitter {
         );
     }
 
-    async sendMessage(address: string, args: EosOscArg[] = []) {
+    async sendMessage(address: string, args: (unknown | OscArgument)[] = []) {
         if (!address.startsWith('/eos/')) {
             throw new Error('message must start with "/eos/"');
         } else if (address.startsWith('/eos/get/')) {
@@ -511,7 +512,7 @@ export class EosConsole extends EventEmitter {
             );
         }
 
-        await this.socket?.writeOsc({ address, args });
+        await this.socket?.writeOsc(new OscMessage(address, args));
     }
 
     private async getRecordTargetList<
@@ -698,10 +699,7 @@ export class EosConsole extends EventEmitter {
 
     private async subscribe(subscribe = true) {
         await this.sendMessage('/eos/subscribe', [
-            {
-                type: 'integer',
-                value: +subscribe,
-            },
+            new OscArgument(+subscribe, 'integer'),
         ]);
     }
 

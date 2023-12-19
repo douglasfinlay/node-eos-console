@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import * as os from 'node:os';
 
 import * as osc from 'osc-min';
+import { OscArgument, OscMessage } from './osc';
 
 export interface EtcDiscoveredDevice {
     host: string;
@@ -122,23 +123,28 @@ export class EtcDiscovery extends EventEmitter {
     }
 
     private handleReply(data: Uint8Array, info: udp.RemoteInfo) {
-        const msg = osc.fromBuffer(data);
+        const rawMsg = osc.fromBuffer(data);
 
-        if (msg.oscType !== 'message') {
+        if (rawMsg.oscType !== 'message') {
             return;
         }
 
-        let uid = msg.args[2].value;
+        const msg = new OscMessage(
+            rawMsg.address,
+            rawMsg.args.map(arg => new OscArgument(arg.value, arg.type)),
+        );
+
+        let uid = msg.args[2].getString();
         uid = uid.substring(1, uid.length - 1);
 
         const host = info.address;
-        const port = msg.args[0].value;
-        const name = msg.args[1].value;
-        const version = msg.args[3].value;
+        const port = msg.args[0].getInteger();
+        const name = msg.args[1].getString();
+        const version = msg.args[3].getString();
 
         // TODO: what are args[4] (bool) and args[5] (string)?
 
-        const device = {
+        const device: EtcDiscoveredDevice = {
             host: info.address,
             name,
             port,

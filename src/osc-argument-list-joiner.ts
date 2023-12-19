@@ -32,10 +32,10 @@ export class OscArgumentListJoiner {
 
                 // First message; store with its partial list of arguments
                 if (argListIndex === 0) {
-                    this.partialMessage = {
+                    this.partialMessage = new OscMessage(
                         address,
-                        args: message.args.slice(),
-                    };
+                        message.args.slice(),
+                    );
 
                     return null;
                 }

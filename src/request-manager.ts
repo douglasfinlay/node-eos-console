@@ -1,4 +1,4 @@
-import { EosOscMessage } from './eos-osc-stream';
+import { OscMessage } from './osc';
 import { EosRequest } from './request';
 
 export class RequestManager {
@@ -10,8 +10,9 @@ export class RequestManager {
         });
     }
 
-    handleResponse(msg: EosOscMessage) {
+    handleResponse(msg: OscMessage) {
         const currentRequest = this.currentRequest;
+
         if (!currentRequest) {
             throw new Error(`unsolicited response "${msg.address}"`);
         }

@@ -1,8 +1,8 @@
-import { EosOscMessage } from './eos-osc-stream';
 import { LogHandler } from './log';
+import { OscMessage } from './osc';
 
 export type OscRouteHandler = (
-    message: EosOscMessage,
+    message: OscMessage,
     params: Record<string, string>,
 ) => void;
 
@@ -118,7 +118,7 @@ export class OscRouter {
         return this;
     }
 
-    route(message: EosOscMessage) {
+    route(message: OscMessage): boolean {
         let currentNode: OscTreeNode = this.rootNode;
         let foundHandler: OscRouteHandler | undefined;
         let foundWildcardHandler: OscRouteHandler | undefined;

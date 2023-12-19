@@ -1,5 +1,3 @@
-import { EosOscArg } from './eos-osc-stream';
-
 export type TargetNumber = number;
 
 /**
@@ -8,7 +6,7 @@ export type TargetNumber = number;
  *   - "1.23" => "1.23"
  *   - "3-5" => [3, 4, 5]
  */
-export function expandTargetNumberArguments(args: EosOscArg[]): TargetNumber[] {
+export function expandTargetNumberArguments(args: unknown[]): TargetNumber[] {
     const expandedArgs = args.flatMap(arg => {
         switch (typeof arg) {
             case 'number':

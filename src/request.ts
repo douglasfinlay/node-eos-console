@@ -1,4 +1,3 @@
-import { EosOscMessage } from './eos-osc-stream';
 import { OscMessage } from './osc';
 import {
     Cue,
@@ -33,7 +32,7 @@ export abstract class EosRequest<T> {
 
     private oscResponses: OscMessage[] = [];
 
-    abstract get outboundMessage(): EosOscMessage;
+    abstract get outboundMessage(): OscMessage;
 
     constructor(private expectedResponseCount = 1) {}
 
@@ -75,11 +74,8 @@ export abstract class EosRequest<T> {
 }
 
 export class EosVersionRequest extends EosRequest<string> {
-    get outboundMessage(): EosOscMessage {
-        return {
-            address: '/eos/get/version',
-            args: [],
-        };
+    get outboundMessage(): OscMessage {
+        return new OscMessage('/eos/get/version');
     }
 
     protected override unpack(messages: OscMessage[]): string {
@@ -115,11 +111,8 @@ export class EosRecordTargetCountRequest extends EosRequest<number> {
         }
     }
 
-    get outboundMessage(): EosOscMessage {
-        return {
-            address: this.outboundAddress,
-            args: [],
-        };
+    get outboundMessage(): OscMessage {
+        return new OscMessage(this.outboundAddress);
     }
 
     protected override unpack(messages: OscMessage[]): number {
@@ -143,15 +136,12 @@ export abstract class EosRecordTargetRequest<
         super(expectedResponseCount);
     }
 
-    get outboundMessage(): EosOscMessage {
-        return {
-            address: this.outboundAddress,
-            args: [],
-        };
+    get outboundMessage(): OscMessage {
+        return new OscMessage(this.outboundAddress);
     }
 
     override collectResponse(msg: OscMessage) {
-        if (msg.args[1] === undefined) {
+        if (!msg.args[1]) {
             // UID is missing, so record target does not exist
             this.response = null;
             return;

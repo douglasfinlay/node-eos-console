@@ -6,14 +6,6 @@ import { LogHandler } from './log';
 import { OscArgument, OscMessage } from './osc';
 import { OscArgumentListJoiner } from './osc-argument-list-joiner';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EosOscArg = any;
-
-export interface EosOscMessage {
-    address: string;
-    args: EosOscArg[];
-}
-
 /**
  * A SLIP-encoded OSC message stream.
  *
@@ -49,7 +41,7 @@ export class EosOscStream extends Duplex {
         return new EosOscStream(socket, log);
     }
 
-    async writeOsc(msg: EosOscMessage) {
+    async writeOsc(msg: OscMessage) {
         return new Promise<void>((resolve, reject) => {
             this._write(msg, 'binary', err => {
                 if (err) {
@@ -70,14 +62,14 @@ export class EosOscStream extends Duplex {
     }
 
     override _write(
-        chunk: osc.Packet,
+        message: OscMessage,
         encoding: BufferEncoding,
         callback: (error?: Error | null) => void,
     ) {
-        const data = osc.toBuffer(chunk);
+        const data = osc.toBuffer(message);
         const buffer = slip.encode(data);
 
-        this.log?.('debug', `Write: ${JSON.stringify(chunk)}`);
+        this.log?.('debug', `Write: ${message}`);
 
         this.socket.write(buffer, encoding, callback);
     }
@@ -108,20 +100,22 @@ export class EosOscStream extends Duplex {
             return;
         }
 
-        this.log?.('debug', `Read: ${JSON.stringify(packet)}`);
-
         if (!isOscMessage(packet)) {
             this.log?.('warn', `Ignoring OSC ${packet.oscType}`);
             return;
         }
 
-        this.onMessageReceived({
-            address: packet.address,
-            args: packet.args.map(arg => new OscArgument(arg.value)),
-        });
+        this.onMessageReceived(
+            new OscMessage(
+                packet.address,
+                packet.args.map(arg => new OscArgument(arg.value, arg.type)),
+            ),
+        );
     }
 
     private onMessageReceived(message: OscMessage) {
+        this.log?.('debug', `Read: ${message}`);
+
         const fullMessage = this.argumentListJoiner.process(message);
 
         if (fullMessage) {
