@@ -42,7 +42,7 @@ export interface Cue extends RecordTarget {
     colorTimeDelayMs: number | null;
     colorTimeDurationMs: number | null;
     cuePartIndex: number | null;
-    curve: string;
+    curve: TargetNumber;
     downTimeDelayMs: number | null;
     downTimeDurationMs: number | null;
     effects: TargetNumber[];
@@ -51,7 +51,7 @@ export interface Cue extends RecordTarget {
     focusTimeDurationMs: number | null;
     followTimeMs: number | null;
     hangTimeMs: number | null;
-    link: number | string;
+    link: TargetNumber;
     linkedCueLists: TargetNumber[];
     loop: number | null;
     mark: string;

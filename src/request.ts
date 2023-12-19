@@ -1,4 +1,5 @@
 import { EosOscMessage } from './eos-osc-stream';
+import { OscMessage } from './osc';
 import {
     Cue,
     CueList,
@@ -30,7 +31,7 @@ export abstract class EosRequest<T> {
     private _error?: Error;
     private _response?: T;
 
-    private oscResponses: EosOscMessage[] = [];
+    private oscResponses: OscMessage[] = [];
 
     abstract get outboundMessage(): EosOscMessage;
 
@@ -56,7 +57,7 @@ export abstract class EosRequest<T> {
         return this.response !== undefined;
     }
 
-    collectResponse(msg: EosOscMessage) {
+    collectResponse(msg: OscMessage) {
         if (!msg.address.startsWith(EosRequest.RESPONSE_PREFIX)) {
             throw new Error(
                 `unexpected response (missing ${EosRequest.RESPONSE_PREFIX}) address prefix)`,
@@ -70,7 +71,7 @@ export abstract class EosRequest<T> {
         }
     }
 
-    protected abstract unpack(messages: EosOscMessage[]): T;
+    protected abstract unpack(messages: OscMessage[]): T;
 }
 
 export class EosVersionRequest extends EosRequest<string> {
@@ -81,14 +82,14 @@ export class EosVersionRequest extends EosRequest<string> {
         };
     }
 
-    protected override unpack(messages: EosOscMessage[]): string {
+    protected override unpack(messages: OscMessage[]): string {
         if (messages[0].address !== '/eos/out/get/version') {
             this.error = new Error(
                 'unexpected response for Eos version request',
             );
         }
 
-        return messages[0].args[0];
+        return messages[0].args[0].getString();
     }
 }
 
@@ -121,14 +122,14 @@ export class EosRecordTargetCountRequest extends EosRequest<number> {
         };
     }
 
-    protected override unpack(messages: EosOscMessage[]): number {
+    protected override unpack(messages: OscMessage[]): number {
         if (messages[0].address !== this.responseAddress) {
             this.error = new Error(
                 `unexpected response for record target count request: ${this.responseAddress}`,
             );
         }
 
-        return messages[0].args[0];
+        return messages[0].args[0].getInteger();
     }
 }
 
@@ -149,7 +150,7 @@ export abstract class EosRecordTargetRequest<
         };
     }
 
-    override collectResponse(msg: EosOscMessage) {
+    override collectResponse(msg: OscMessage) {
         if (msg.args[1] === undefined) {
             // UID is missing, so record target does not exist
             this.response = null;
@@ -175,44 +176,46 @@ export class EosCueRequest extends EosRecordTargetRequest<Cue> {
         );
     }
 
-    protected override unpack(messages: EosOscMessage[]): Cue {
+    protected override unpack(messages: OscMessage[]): Cue {
         return {
             targetType: 'cue',
             targetNumber: Number(messages[0].address.split('/')[6]),
             ...unpackBaseRecordTarget(messages[0]),
-            upTimeDurationMs: messages[0].args[3],
-            upTimeDelayMs: messages[0].args[4],
-            downTimeDurationMs: nullIfNegative(messages[0].args[5]),
-            downTimeDelayMs: nullIfNegative(messages[0].args[6]),
-            focusTimeDurationMs: nullIfNegative(messages[0].args[7]),
-            focusTimeDelayMs: nullIfNegative(messages[0].args[8]),
-            colorTimeDurationMs: nullIfNegative(messages[0].args[9]),
-            colorTimeDelayMs: nullIfNegative(messages[0].args[10]),
-            beamTimeDurationMs: nullIfNegative(messages[0].args[11]),
-            beamTimeDelayMs: nullIfNegative(messages[0].args[12]),
-            preheat: messages[0].args[13],
-            curve: messages[0].args[14],
-            rate: messages[0].args[15],
-            mark: messages[0].args[16],
-            block: messages[0].args[17],
-            assert: messages[0].args[18],
-            link: messages[0].args[19],
-            followTimeMs: nullIfNegative(messages[0].args[20]),
-            hangTimeMs: nullIfNegative(messages[0].args[21]),
-            allFade: messages[0].args[22],
-            loop: nullIfNegative(messages[0].args[23]),
-            solo: messages[0].args[24],
-            timecode: messages[0].args[25],
-            partCount: messages[0].args[26],
-            notes: messages[0].args[27],
-            scene: messages[0].args[28],
-            sceneEnd: messages[0].args[29],
-            cuePartIndex: nullIfNegative(messages[0].args[30]),
-            effects: expandTargetNumberArguments(messages[1].args.slice(2)),
-            linkedCueLists: expandTargetNumberArguments(
-                messages[2].args.slice(2),
+            upTimeDurationMs: messages[0].args[3].getInteger(),
+            upTimeDelayMs: messages[0].args[4].getInteger(),
+            downTimeDurationMs: messages[0].args[5].getOptionalInteger(),
+            downTimeDelayMs: messages[0].args[6].getOptionalInteger(),
+            focusTimeDurationMs: messages[0].args[7].getOptionalInteger(),
+            focusTimeDelayMs: messages[0].args[8].getOptionalInteger(),
+            colorTimeDurationMs: messages[0].args[9].getOptionalInteger(),
+            colorTimeDelayMs: messages[0].args[10].getOptionalInteger(),
+            beamTimeDurationMs: messages[0].args[11].getOptionalInteger(),
+            beamTimeDelayMs: messages[0].args[12].getOptionalInteger(),
+            preheat: messages[0].args[13].getBoolean(),
+            curve: messages[0].args[14].getTargetNumber(),
+            rate: messages[0].args[15].getInteger(),
+            mark: messages[0].args[16].getString(),
+            block: messages[0].args[17].getString(),
+            assert: messages[0].args[18].getString(),
+            link: messages[0].args[19].getTargetNumber(),
+            followTimeMs: messages[0].args[20].getOptionalInteger(),
+            hangTimeMs: messages[0].args[21].getOptionalInteger(),
+            allFade: messages[0].args[22].getBoolean(),
+            loop: messages[0].args[23].getOptionalInteger(),
+            solo: messages[0].args[24].getBoolean(),
+            timecode: messages[0].args[25].getString(),
+            partCount: messages[0].args[26].getInteger(),
+            notes: messages[0].args[27].getString(),
+            scene: messages[0].args[28].getString(),
+            sceneEnd: messages[0].args[29].getBoolean(),
+            cuePartIndex: messages[0].args[30].getOptionalInteger(),
+            effects: expandTargetNumberArguments(
+                messages[1].args.slice(2).map(arg => arg.value),
             ),
-            externalLinkAction: messages[3].args[2] ?? null,
+            linkedCueLists: expandTargetNumberArguments(
+                messages[2].args.slice(2).map(arg => arg.value),
+            ),
+            externalLinkAction: messages[3].args[2]?.getString() ?? null,
         };
     }
 }
@@ -226,23 +229,23 @@ export class EosCueListRequest extends EosRecordTargetRequest<CueList> {
         return new EosCueListRequest(`/eos/get/cuelist/${targetNumber}`, 2);
     }
 
-    protected override unpack(messages: EosOscMessage[]): CueList {
+    protected override unpack(messages: OscMessage[]): CueList {
         return {
             targetType: 'cuelist',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            playbackMode: messages[0].args[3],
-            faderMode: messages[0].args[4],
-            independent: messages[0].args[5],
-            htp: messages[0].args[6],
-            assert: messages[0].args[7],
-            block: messages[0].args[8],
-            background: messages[0].args[9],
-            solo: messages[0].args[10],
-            timecodeList: nullIfNegative(messages[0].args[11]),
-            oosSync: messages[0].args[12],
+            playbackMode: messages[0].args[3].getString(),
+            faderMode: messages[0].args[4].getString(),
+            independent: messages[0].args[5].getBoolean(),
+            htp: messages[0].args[6].getBoolean(),
+            assert: messages[0].args[7].getBoolean(),
+            block: messages[0].args[8].getBoolean(),
+            background: messages[0].args[9].getBoolean(),
+            solo: messages[0].args[10].getBoolean(),
+            timecodeList: messages[0].args[11].getOptionalInteger(),
+            oosSync: messages[0].args[12].getBoolean(),
             linkedCueLists: expandTargetNumberArguments(
-                messages[1].args.slice(2),
+                messages[1].args.slice(2).map(arg => arg.value),
             ),
         };
     }
@@ -257,7 +260,7 @@ export class EosCurveRequest extends EosRecordTargetRequest<Curve> {
         return new EosCurveRequest(`/eos/get/curve/${targetNumber}`);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Curve {
+    protected override unpack(messages: OscMessage[]): Curve {
         return {
             targetType: 'curve',
             targetNumber: Number(messages[0].address.split('/')[5]),
@@ -275,16 +278,16 @@ export class EosEffectRequest extends EosRecordTargetRequest<Effect> {
         return new EosEffectRequest(`/eos/get/fx/${targetNumber}`);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Effect {
+    protected override unpack(messages: OscMessage[]): Effect {
         return {
             targetType: 'fx',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            effectType: messages[0].args[3],
-            entry: messages[0].args[4],
-            exit: messages[0].args[5],
-            duration: messages[0].args[6],
-            scale: messages[0].args[7],
+            effectType: messages[0].args[3].getString(),
+            entry: messages[0].args[4].getString(),
+            exit: messages[0].args[5].getString(),
+            duration: messages[0].args[6].getString(),
+            scale: messages[0].args[7].getInteger(),
         };
     }
 }
@@ -298,12 +301,14 @@ export class EosGroupRequest extends EosRecordTargetRequest<Group> {
         return new EosGroupRequest(`/eos/get/group/${targetNumber}`, 2);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Group {
+    protected override unpack(messages: OscMessage[]): Group {
         return {
             targetType: 'group',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            channels: expandTargetNumberArguments(messages[1].args.slice(2)),
+            channels: expandTargetNumberArguments(
+                messages[1].args.slice(2).map(arg => arg.value),
+            ),
         };
     }
 }
@@ -317,13 +322,16 @@ export class EosMacroRequest extends EosRecordTargetRequest<Macro> {
         return new EosMacroRequest(`/eos/get/macro/${targetNumber}`, 2);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Macro {
+    protected override unpack(messages: OscMessage[]): Macro {
         return {
             targetType: 'macro',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            mode: messages[0].args[3],
-            command: messages[1].args.slice(2).join(''),
+            mode: messages[0].args[3].getString(),
+            command: messages[1].args
+                .slice(2)
+                .map(arg => arg.getString())
+                .join(''),
         };
     }
 }
@@ -337,7 +345,7 @@ export class EosMagicSheetRequest extends EosRecordTargetRequest<MagicSheet> {
         return new EosMagicSheetRequest(`/eos/get/ms/${targetNumber}`);
     }
 
-    protected override unpack(messages: EosOscMessage[]): MagicSheet {
+    protected override unpack(messages: OscMessage[]): MagicSheet {
         return {
             targetType: 'ms',
             targetNumber: Number(messages[0].address.split('/')[5]),
@@ -361,16 +369,18 @@ export class EosPaletteRequest extends EosRecordTargetRequest<Palette> {
         );
     }
 
-    protected override unpack(messages: EosOscMessage[]): Palette {
+    protected override unpack(messages: OscMessage[]): Palette {
         return {
             targetType: messages[0].address.split('/')[4] as PaletteType,
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            absolute: messages[0].args[3],
-            locked: messages[0].args[4],
-            channels: expandTargetNumberArguments(messages[1].args.slice(2)),
+            absolute: messages[0].args[3].getBoolean(),
+            locked: messages[0].args[4].getBoolean(),
+            channels: expandTargetNumberArguments(
+                messages[1].args.slice(2).map(arg => arg.value),
+            ),
             byTypeChannels: expandTargetNumberArguments(
-                messages[2].args.slice(2),
+                messages[2].args.slice(2).map(arg => arg.value),
             ),
         };
     }
@@ -391,30 +401,30 @@ export class EosPatchRequest extends EosRecordTargetRequest<Patch> {
         );
     }
 
-    protected override unpack(messages: EosOscMessage[]): Patch {
+    protected override unpack(messages: OscMessage[]): Patch {
         return {
             targetType: 'patch',
             targetNumber: Number(messages[0].address.split('/')[5]),
             partNumber: Number(messages[0].address.split('/')[6]),
             ...unpackBaseRecordTarget(messages[0]),
-            fixtureManufacturer: messages[0].args[3],
-            fixtureModel: messages[0].args[4],
-            address: messages[0].args[5],
-            intensityParameterAddress: messages[0].args[6],
-            currentLevel: messages[0].args[7],
-            gel: messages[0].args[8],
-            text1: messages[0].args[9],
-            text2: messages[0].args[10],
-            text3: messages[0].args[11],
-            text4: messages[0].args[12],
-            text5: messages[0].args[13],
-            text6: messages[0].args[14],
-            text7: messages[0].args[15],
-            text8: messages[0].args[16],
-            text9: messages[0].args[17],
-            text10: messages[0].args[18],
-            partCount: messages[0].args[19],
-            notes: messages[1].args[2],
+            fixtureManufacturer: messages[0].args[3].getString(),
+            fixtureModel: messages[0].args[4].getString(),
+            address: messages[0].args[5].getInteger(),
+            intensityParameterAddress: messages[0].args[6].getInteger(),
+            currentLevel: messages[0].args[7].getInteger(),
+            gel: messages[0].args[8].getString(),
+            text1: messages[0].args[9].getString(),
+            text2: messages[0].args[10].getString(),
+            text3: messages[0].args[11].getString(),
+            text4: messages[0].args[12].getString(),
+            text5: messages[0].args[13].getString(),
+            text6: messages[0].args[14].getString(),
+            text7: messages[0].args[15].getString(),
+            text8: messages[0].args[16].getString(),
+            text9: messages[0].args[17].getString(),
+            text10: messages[0].args[18].getString(),
+            partCount: messages[0].args[19].getInteger(),
+            notes: messages[1].args[2].getString(),
         };
     }
 }
@@ -428,19 +438,19 @@ export class EosPixelMapRequest extends EosRecordTargetRequest<PixelMap> {
         return new EosPixelMapRequest(`/eos/get/pixmap/${targetNumber}`, 2);
     }
 
-    protected override unpack(messages: EosOscMessage[]): PixelMap {
+    protected override unpack(messages: OscMessage[]): PixelMap {
         return {
             targetType: 'pixmap',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            serverChannel: messages[0].args[3],
-            interface: messages[0].args[4],
-            width: messages[0].args[5],
-            height: messages[0].args[6],
-            pixelCount: messages[0].args[7],
-            fixtureCount: messages[0].args[8],
+            serverChannel: messages[0].args[3].getInteger(),
+            interface: messages[0].args[4].getString(),
+            width: messages[0].args[5].getInteger(),
+            height: messages[0].args[6].getInteger(),
+            pixelCount: messages[0].args[7].getInteger(),
+            fixtureCount: messages[0].args[8].getInteger(),
             layerChannels: expandTargetNumberArguments(
-                messages[1].args.slice(2),
+                messages[1].args.slice(2).map(arg => arg.value),
             ),
         };
     }
@@ -455,18 +465,22 @@ export class EosPresetRequest extends EosRecordTargetRequest<Preset> {
         return new EosPresetRequest(`/eos/get/preset/${targetNumber}`, 4);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Preset {
+    protected override unpack(messages: OscMessage[]): Preset {
         return {
             targetType: 'preset',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            absolute: messages[0].args[3],
-            locked: messages[0].args[4],
-            channels: expandTargetNumberArguments(messages[1].args.slice(2)),
-            byTypeChannels: expandTargetNumberArguments(
-                messages[2].args.slice(2),
+            absolute: messages[0].args[3].getBoolean(),
+            locked: messages[0].args[4].getBoolean(),
+            channels: expandTargetNumberArguments(
+                messages[1].args.slice(2).map(arg => arg.value),
             ),
-            effects: expandTargetNumberArguments(messages[3].args.slice(2)),
+            byTypeChannels: expandTargetNumberArguments(
+                messages[2].args.slice(2).map(arg => arg.value),
+            ),
+            effects: expandTargetNumberArguments(
+                messages[3].args.slice(2).map(arg => arg.value),
+            ),
         };
     }
 }
@@ -480,7 +494,7 @@ export class EosSnapshotRequest extends EosRecordTargetRequest<Snapshot> {
         return new EosSnapshotRequest(`/eos/get/snap/${targetNumber}`);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Snapshot {
+    protected override unpack(messages: OscMessage[]): Snapshot {
         return {
             targetType: 'snap',
             targetNumber: Number(messages[0].address.split('/')[5]),
@@ -498,35 +512,33 @@ export class EosSubRequest extends EosRecordTargetRequest<Sub> {
         return new EosSubRequest(`/eos/get/snap/${targetNumber}`, 2);
     }
 
-    protected override unpack(messages: EosOscMessage[]): Sub {
+    protected override unpack(messages: OscMessage[]): Sub {
         return {
             targetType: 'sub',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            mode: messages[0].args[3],
-            faderMode: messages[0].args[4],
-            htp: messages[0].args[5],
-            exclusive: messages[0].args[6],
-            background: messages[0].args[7],
-            restore: messages[0].args[8],
-            priority: messages[0].args[9],
-            upTime: messages[0].args[10],
-            dwellTime: messages[0].args[11],
-            downTime: messages[0].args[12],
-            effects: expandTargetNumberArguments(messages[1].args.slice(2)),
+            mode: messages[0].args[3].getString(),
+            faderMode: messages[0].args[4].getString(),
+            htp: messages[0].args[5].getBoolean(),
+            exclusive: messages[0].args[6].getBoolean(),
+            background: messages[0].args[7].getBoolean(),
+            restore: messages[0].args[8].getBoolean(),
+            priority: messages[0].args[9].getString(),
+            upTime: messages[0].args[10].getString(),
+            dwellTime: messages[0].args[11].getString(),
+            downTime: messages[0].args[12].getString(),
+            effects: expandTargetNumberArguments(
+                messages[1].args.slice(2).map(arg => arg.value),
+            ),
         };
     }
 }
 
 function unpackBaseRecordTarget(
-    message: EosOscMessage,
+    message: OscMessage,
 ): Omit<RecordTarget, 'targetType' | 'targetNumber'> {
     return {
-        uid: message.args[1],
-        label: message.args[2],
+        uid: message.args[1].getString(),
+        label: message.args[2].getString(),
     };
-}
-
-function nullIfNegative(x: number): number | null {
-    return x >= 0 ? x : null;
 }

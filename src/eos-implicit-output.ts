@@ -1,4 +1,3 @@
-import { EosOscMessage } from './eos-osc-stream';
 import {
     EosColorHueSat,
     EosCueIdentifier,
@@ -9,6 +8,7 @@ import {
     EosWheelCategory,
     EosWheelMode,
 } from './eos-types';
+import { OscMessage } from './osc';
 import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 export type EosImplicitOutput =
@@ -177,7 +177,7 @@ const WHEEL_MODE_LOOKUP: Record<number, EosWheelMode> = {
 };
 
 type ImplicitOutputHandler = (
-    message: EosOscMessage,
+    message: OscMessage,
     params: Record<string, string>,
 ) => EosImplicitOutput;
 
@@ -189,8 +189,8 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         color:
             message.args.length === 2
                 ? {
-                      hue: Number(message.args[0]),
-                      saturation: Number(message.args[1]),
+                      hue: message.args[0].getFloat(),
+                      saturation: message.args[1].getFloat(),
                   }
                 : null,
     }),
@@ -201,15 +201,15 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
             message.args.length === 6
                 ? {
                       panRange: [
-                          Number(message.args[0]),
-                          Number(message.args[1]),
+                          message.args[0].getFloat(),
+                          message.args[1].getFloat(),
                       ],
                       tiltRange: [
-                          Number(message.args[2]),
-                          Number(message.args[3]),
+                          message.args[2].getFloat(),
+                          message.args[3].getFloat(),
                       ],
-                      pan: Number(message.args[4]),
-                      tilt: Number(message.args[5]),
+                      pan: message.args[4].getFloat(),
+                      tilt: message.args[5].getFloat(),
                   }
                 : null,
     }),
@@ -219,9 +219,9 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         focus:
             message.args.length === 3
                 ? {
-                      x: Number(message.args[0]),
-                      y: Number(message.args[1]),
-                      z: Number(message.args[2]),
+                      x: message.args[0].getFloat(),
+                      y: message.args[1].getFloat(),
+                      z: message.args[2].getFloat(),
                   }
                 : null,
     }),
@@ -229,7 +229,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     '/eos/out/softkey/{softkey}': (message, params) => ({
         type: 'soft-key',
         index: Number(params.softkey) - 1,
-        label: message.args[0],
+        label: message.args[0].getString(),
     }),
 
     //
@@ -237,13 +237,13 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     //
     '/eos/out/cmd': message => ({
         type: 'cmd',
-        commandLine: message.args[0],
+        commandLine: message.args[0].getString(),
     }),
 
     '/eos/out/user/{userId}/cmd': (message, params) => ({
         type: 'user-cmd',
         userId: Number(params.userId),
-        commandLine: message.args[0],
+        commandLine: message.args[0].getString(),
     }),
 
     //
@@ -251,24 +251,24 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     //
     '/eos/out/switch': message => ({
         type: 'switch-mode',
-        mode: WHEEL_MODE_LOOKUP[message.args[0]],
+        mode: WHEEL_MODE_LOOKUP[message.args[0].getInteger()],
     }),
 
     '/eos/out/user': message => ({
         type: 'user',
-        userId: Number(message.args[0]),
+        userId: message.args[0].getInteger(),
     }),
 
     '/eos/out/wheel': message => ({
         type: 'wheel-mode',
-        mode: WHEEL_MODE_LOOKUP[message.args[0]],
+        mode: WHEEL_MODE_LOOKUP[message.args[0].getInteger()],
     }),
 
     //
     // OSC Active Channels and Parameters
     //
     '/eos/out/active/chan': message => {
-        const rawChannels = message.args[0] as string;
+        const rawChannels = message.args[0].getString();
         const i = rawChannels.indexOf(' ');
 
         const channels = expandTargetNumberArguments(
@@ -290,14 +290,14 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         // Only parse the wheel if it has a non-zero category
         if (message.args[1]) {
             // Remove the "current value" text in square brackets
-            let parameter = message.args[0] as string;
+            let parameter = message.args[0].getString();
             const i = parameter.lastIndexOf('[');
             parameter = parameter.substring(0, i).trimEnd();
 
             wheel = {
-                category: WHEEL_CATEGORY_LOOKUP[message.args[1]],
+                category: WHEEL_CATEGORY_LOOKUP[message.args[1].getInteger()],
                 parameter,
-                value: Number(message.args[2]),
+                value: message.args[2].getFloat(),
             };
         }
 
@@ -321,12 +321,12 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
 
     '/eos/out/active/cue': message => ({
         type: 'active-cue-percent',
-        percentComplete: Number(message.args[0]),
+        percentComplete: message.args[0].getInteger(),
     }),
 
     '/eos/out/active/cue/text': message => ({
         type: 'active-cue-text',
-        text: message.args[0],
+        text: message.args[0].getString(),
     }),
 
     '/eos/out/pending/cue': () => ({
@@ -344,7 +344,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
 
     '/eos/out/pending/cue/text': message => ({
         type: 'pending-cue-text',
-        text: message.args[0],
+        text: message.args[0].getString(),
     }),
 
     '/eos/out/previous/cue': () => ({
@@ -362,7 +362,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
 
     '/eos/out/previous/cue/text': message => ({
         type: 'previous-cue-text',
-        text: message.args[0],
+        text: message.args[0].getString(),
     }),
 
     //
@@ -382,7 +382,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
         },
-        label: message.args[0],
+        label: message.args[0].getString(),
     }),
 
     '/eos/out/event/cue/{cueList}/{cueNumber}/stop': (message, params) => ({
@@ -391,7 +391,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
         },
-        label: message.args[0],
+        label: message.args[0].getString(),
     }),
 
     '/eos/out/event/macro/{macroNumber}': (_, params) => ({
@@ -409,7 +409,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     '/eos/out/event/sub/{subNumber}': (message, params) => ({
         type: 'sub-bumped',
         sub: Number(params.subNumber),
-        bump: !!message.args[0],
+        bump: !!message.args[0].getInteger(),
     }),
 
     //
@@ -417,17 +417,17 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     //
     '/eos/out/show/name': message => ({
         type: 'show-name',
-        showName: message.args[0],
+        showName: message.args[0].getString(),
     }),
 
     '/eos/out/event/show/loaded': message => ({
         type: 'show-loaded',
-        filePath: message.args[0],
+        filePath: message.args[0].getString(),
     }),
 
     '/eos/out/event/show/saved': message => ({
         type: 'show-saved',
-        filePath: message.args[0],
+        filePath: message.args[0].getString(),
     }),
 
     '/eos/out/event/show/cleared': () => ({
@@ -439,11 +439,11 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     //
     '/eos/out/event/locked': message => ({
         type: 'locked',
-        locked: !!message.args[0],
+        locked: !!message.args[0].getInteger(),
     }),
 
     '/eos/out/event/state': message => ({
         type: 'state',
-        state: STATE_LOOKUP[message.args[0]],
+        state: STATE_LOOKUP[message.args[0].getInteger()],
     }),
 };
