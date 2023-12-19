@@ -1,17 +1,16 @@
 declare module 'osc-min' {
     type Packet = Message | Bundle;
 
-    type Message = {
+    interface Message {
         address: string;
         args: Argument[];
         oscType?: 'message';
-    };
+    }
 
-    type Argument = {
+    interface Argument {
         type?: ArgumentType;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        value: any;
-    };
+        value: unknown;
+    }
 
     type ArgumentType =
         | 'array'
@@ -26,11 +25,11 @@ declare module 'osc-min' {
         | 'timetag'
         | 'true';
 
-    type Bundle = {
+    interface Bundle {
         elements: Packet[];
         oscType?: 'bundle';
         timeTag: Timetag;
-    };
+    }
 
     type Timetag = null | number | NtpTimetag | Date;
 
