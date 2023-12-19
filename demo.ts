@@ -1,7 +1,7 @@
 import { EosConsole } from './src/eos-console';
 
 (async () => {
-    const eos = new EosConsole('localhost');
+    const eos = new EosConsole({ host: 'localhost' });
 
     await eos.connect();
     await eos.changeUser(1);
