@@ -1,4 +1,4 @@
-import { EosOscMessage } from './eos-osc-stream';
+import { OscMessage } from './osc';
 
 export class OscArgumentListJoiner {
     /**
@@ -7,7 +7,7 @@ export class OscArgumentListJoiner {
      */
     private static readonly ADDRESS_SUFFIX = /\/list\/(\d+)\/(\d+)$/;
 
-    private partialMessage: EosOscMessage | null = null;
+    private partialMessage: OscMessage | null = null;
 
     /**
      * @returns the unaltered message if it does not follow the OSC list
@@ -15,7 +15,7 @@ export class OscArgumentListJoiner {
      * arguments have been collected, or `null` if there are still more
      * arguments to collect
      */
-    process(message: EosOscMessage): EosOscMessage | null {
+    process(message: OscMessage): OscMessage | null {
         const matches = OscArgumentListJoiner.ADDRESS_SUFFIX.exec(
             message.address,
         );

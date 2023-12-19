@@ -3,6 +3,7 @@ import { Duplex } from 'node:stream';
 import * as osc from 'osc-min';
 import * as slip from 'slip';
 import { LogHandler } from './log';
+import { OscArgument, OscMessage } from './osc';
 import { OscArgumentListJoiner } from './osc-argument-list-joiner';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,11 +117,11 @@ export class EosOscStream extends Duplex {
 
         this.onMessageReceived({
             address: packet.address,
-            args: packet.args.map(arg => arg.value),
+            args: packet.args.map(arg => new OscArgument(arg.value)),
         });
     }
 
-    private onMessageReceived(message: EosOscMessage) {
+    private onMessageReceived(message: OscMessage) {
         const fullMessage = this.argumentListJoiner.process(message);
 
         if (fullMessage) {
@@ -128,7 +129,7 @@ export class EosOscStream extends Duplex {
         }
     }
 
-    private releaseMessage(message: EosOscMessage) {
+    private releaseMessage(message: OscMessage) {
         // Add message to read buffer
         const hasSpace = this.push(message);
 
