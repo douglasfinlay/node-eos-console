@@ -138,7 +138,7 @@ export class EosConsole extends EventEmitter {
         this.initRoutes();
     }
 
-    async connect(timeout = 5000) {
+    connect(timeout = 5000) {
         this.log?.(
             'info',
             `Connecting to Eos console at ${this.host}:${this.port}`,
@@ -147,57 +147,69 @@ export class EosConsole extends EventEmitter {
         this._connectionState = 'connecting';
         this.emit('connecting');
 
-        const timer = setTimeout(() => {
-            handleConnectTimeout();
-        }, timeout);
+        return new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => {
+                handleConnectTimeout();
+            }, timeout);
 
-        const handleConnectError = (err: Error) => {
-            clearTimeout(timer);
-            this.socket?.off('ready', handleReady);
+            const handleConnectError = (err: Error) => {
+                clearTimeout(timer);
+                this.socket?.off('ready', handleReady);
 
-            this.emit('connectError', err);
-        };
+                this.emit('connectError', err);
+                reject(err);
+            };
 
-        const handleConnectTimeout = () => {
-            this.socket?.destroy();
-            this.socket?.off('error', handleConnectError);
-            this.socket?.off('ready', handleReady);
+            const handleConnectTimeout = () => {
+                this.socket?.destroy();
+                this.socket?.off('error', handleConnectError);
+                this.socket?.off('ready', handleReady);
 
-            this.emit('connectError', new Error('timed out'));
-        };
+                this.emit('connectError', new Error('timed out'));
+                reject(new Error('timed out'));
+            };
 
-        const handleReady = async () => {
-            clearTimeout(timer);
+            const handleReady = () => {
+                clearTimeout(timer);
 
-            this.socket?.off('error', handleConnectError);
+                this.socket?.off('error', handleConnectError);
 
-            this.socket?.once('close', () => {
-                this.log?.('info', 'Eos connection closed');
+                this.socket?.once('close', () => {
+                    this.log?.('info', 'Eos connection closed');
 
-                this._connectionState = 'disconnected';
-                this.emit('disconnect');
+                    this._connectionState = 'disconnected';
+                    this.emit('disconnect');
 
-                this.socket?.removeAllListeners();
-                this.clearState();
-            });
+                    this.socket?.removeAllListeners();
+                    this.clearState();
+                });
 
-            this.socket?.on('error', this.handleOscError.bind(this));
-            this.socket?.on('data', this.router.route.bind(this.router));
+                this.socket?.on('error', this.handleOscError.bind(this));
+                this.socket?.on('data', this.router.route.bind(this.router));
 
-            this.log?.('info', 'Connected');
+                this.log?.('info', 'Connected');
 
-            this._connectionState = 'connected';
-            this.emit('connect');
+                this._connectionState = 'connected';
+                this.emit('connect');
 
-            const version = await this.getVersion();
-            this.log?.('info', `Eos version ${version}`);
+                this.getVersion()
+                    .then(version => {
+                        this._version = version;
+                        this.log?.('info', `Eos version ${version}`);
 
-            await this.subscribe();
-        };
+                        return this.subscribe();
+                    })
+                    .then(resolve)
+                    .catch(err => {
+                        reject(err);
+                    });
+            };
 
-        this.socket = EosOscStream.connect(this.host, this.port, this.log);
-        this.socket.once('error', handleConnectError);
-        this.socket.once('ready', handleReady);
+            this.socket = EosOscStream.connect(this.host, this.port, this.log);
+
+            this.socket.once('error', handleConnectError);
+            this.socket.once('ready', handleReady);
+        });
     }
 
     disconnect() {
