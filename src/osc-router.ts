@@ -31,9 +31,9 @@ interface OscWildcardTreeNode extends OscTreeNode {
 /**
  * Routes OSC messages by their address pattern segments in the following order:
  *
- * 1. Full static match (`/eos/out/get/cue/1/count`)
+ * 1. Exact match (`/eos/out/get/cue/1/count`)
  * 2. Full match with parameters (`/eos/out/get/cue/{cueList}/count`)
- * 3. Wildcards (`/eos/out/*`)
+ * 3. Wildcard (prefix) match (`/eos/out/*`)
  */
 export class OscRouter {
     private rootNode: OscTreeNode = { type: 'root', value: '' };
@@ -54,9 +54,7 @@ export class OscRouter {
                     throw new Error(
                         'wildcards may only be used at the end of a route',
                     );
-                }
-
-                if (currentNode.childWildcard) {
+                } else if (currentNode.childWildcard) {
                     throw new Error(
                         `a route already exists for "${addressPattern}"`,
                     );
@@ -66,6 +64,7 @@ export class OscRouter {
                     type: 'wildcard',
                     value: '*',
                 };
+
                 currentNode = currentNode.childWildcard;
             } else {
                 const paramName = OscRouter.extractParamName(segment);
@@ -88,14 +87,9 @@ export class OscRouter {
                     currentNode = currentNode.childParam;
                 } else {
                     // Segment is a literal
-                    if (!currentNode.childLiterals) {
-                        currentNode.childLiterals = {
-                            [segment]: {
-                                type: 'literal',
-                                value: segment,
-                            },
-                        };
-                    } else if (!currentNode.childLiterals[segment]) {
+                    currentNode.childLiterals ??= {};
+
+                    if (!(segment in currentNode.childLiterals)) {
                         currentNode.childLiterals[segment] = {
                             type: 'literal',
                             value: segment,
@@ -120,19 +114,18 @@ export class OscRouter {
 
     route(message: OscMessage): boolean {
         let currentNode: OscTreeNode = this.rootNode;
-        let foundHandler: OscRouteHandler | undefined;
-        let foundWildcardHandler: OscRouteHandler | undefined;
-        let fullMatch = true;
+        let exactMatch = true;
+        let exactMatchHandler: OscRouteHandler | undefined;
+        let wildcardHandler: OscRouteHandler | undefined;
         const collectedParams: Record<string, string> = {};
         const debugSegments: string[] = [];
-
         const segments = message.address.split('/').slice(1);
 
         for (const segment of segments) {
             // Keep track of the latest wildcard match to be used as a fallback
-            // if an exact match is not found
+            // if an exact match or param match is not found
             if (currentNode.childWildcard?.handler) {
-                foundWildcardHandler = currentNode.childWildcard.handler;
+                wildcardHandler = currentNode.childWildcard.handler;
             }
 
             if (currentNode.childLiterals?.[segment]) {
@@ -147,36 +140,28 @@ export class OscRouter {
 
                 debugSegments.push(`{${param}}`);
             } else {
-                fullMatch = false;
+                exactMatch = false;
                 break;
             }
         }
 
-        if (fullMatch && currentNode.handler) {
-            foundHandler = currentNode.handler;
+        if (exactMatch && currentNode.handler) {
+            exactMatchHandler = currentNode.handler;
         }
 
+        // Prioritise an exact match over a wildcard match
+        const handler = exactMatchHandler ?? wildcardHandler;
         let handled = false;
 
-        if (foundHandler) {
-            this.log?.(
-                'debug',
-                `Message "${
-                    message.address
-                }" matched to route "/${debugSegments.join('/')}"`,
-            );
+        if (handler) {
+            let debugMessage = `Message "${
+                message.address
+            }" matched to route "/${debugSegments.join('/')}`;
+            debugMessage += handler === wildcardHandler ? '/*"' : '"';
 
-            foundHandler(message, collectedParams);
-            handled = true;
-        } else if (foundWildcardHandler) {
-            this.log?.(
-                'debug',
-                `Message "${
-                    message.address
-                }" matched to route "/${debugSegments.join('/')}/*"`,
-            );
+            this.log?.('debug', debugMessage);
 
-            foundWildcardHandler(message, collectedParams);
+            handler(message, collectedParams);
             handled = true;
         }
 
@@ -254,7 +239,7 @@ export class OscRouter {
     }
 
     private static extractParamName(token: string) {
-        if (token[0] !== '{' && token[token.length - 1] !== '}') {
+        if (!token.startsWith('{') && !token.endsWith('}')) {
             return;
         }
 
