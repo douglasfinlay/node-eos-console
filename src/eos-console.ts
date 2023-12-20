@@ -213,7 +213,9 @@ export class EosConsole extends EventEmitter {
     }
 
     async changeUser(userId: number) {
-        await this.sendMessage('/eos/user', [userId]);
+        await this.sendMessage('/eos/user', [
+            new OscArgument(userId, 'integer'),
+        ]);
     }
 
     async executeCommand(
