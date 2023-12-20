@@ -37,7 +37,7 @@ export class RequestManager {
         const completer = new Deferred<T>();
 
         this.inflightRequests.push({
-            completer: completer as Deferred<unknown>,
+            completer: completer as Deferred,
             handler: request,
         });
 

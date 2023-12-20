@@ -15,7 +15,9 @@ export function expandTargetNumberArguments(args: unknown[]): TargetNumber[] {
                 return parseStringTargetNumberRange(arg);
             default:
                 throw new Error(
-                    `unexpected type "${typeof arg}" for target number argument: ${arg}`,
+                    `unexpected type "${typeof arg}" for target number argument: ${String(
+                        arg,
+                    )}`,
                 );
         }
     });

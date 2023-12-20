@@ -20,7 +20,7 @@ export class OscMessage {
      */
     toString() {
         return this.args.reduce(
-            (result, arg) => `${result}, ${arg}`,
+            (result, arg) => `${result}, ${String(arg)}`,
             this.address,
         );
     }
@@ -102,10 +102,10 @@ export class OscArgument<T = unknown> {
         let typeTag = '?';
 
         if (this.type) {
-            typeTag = OSC_TYPE_TAGS[this.type] ?? typeTag;
+            typeTag = OSC_TYPE_TAGS[this.type];
         }
 
-        return `${this.value}(${typeTag})`;
+        return `${String(this.value)}(${typeTag})`;
     }
 }
 

@@ -261,7 +261,7 @@ export class EosConsole extends EventEmitter {
 
         let completedCount = 0;
 
-        const cueRequests: Promise<Cue | null>[] = new Array(total);
+        const cueRequests = new Array<Promise<Cue | null>>(total);
 
         for (let i = 0; i < total; i++) {
             cueRequests[i] = this.request(
@@ -399,10 +399,11 @@ export class EosConsole extends EventEmitter {
             progressCallback,
         );
 
-        const patchByTargetNumber = patch.reduce<Record<number, Patch[]>>(
+        const groupByTargetNumber = patch.reduce<Record<number, Patch[]>>(
             (group, entry) => {
                 const { targetNumber } = entry;
-                group[targetNumber] = group[targetNumber] ?? [];
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                group[targetNumber] ??= [];
                 group[targetNumber].push(entry);
 
                 return group;
@@ -410,7 +411,7 @@ export class EosConsole extends EventEmitter {
             {},
         );
 
-        return Object.values(patchByTargetNumber).map(transformPatchToChannel);
+        return Object.values(groupByTargetNumber).map(transformPatchToChannel);
     }
 
     async getPreset(targetNumber: TargetNumber) {
@@ -517,7 +518,7 @@ export class EosConsole extends EventEmitter {
         );
     }
 
-    async sendMessage(address: string, args: (unknown | OscArgument)[] = []) {
+    async sendMessage(address: string, args: unknown[] = []) {
         if (!address.startsWith('/eos/')) {
             throw new Error('message must start with "/eos/"');
         } else if (address.startsWith('/eos/get/')) {
@@ -548,8 +549,9 @@ export class EosConsole extends EventEmitter {
 
         let completedCount = 0;
 
-        const requestPromises: Promise<RecordTargets[TTargetType] | null>[] =
-            new Array(total);
+        const requestPromises = new Array<
+            Promise<RecordTargets[TTargetType] | null>
+        >(total);
 
         for (let i = 0; i < total; i++) {
             requestPromises[i] = this.request(indexRequestFactory(i)).then(
@@ -680,9 +682,9 @@ export class EosConsole extends EventEmitter {
         }
 
         this.router
-            .on('/eos/out/get/*', message =>
-                this.requestManager.handleResponse(message),
-            )
+            .on('/eos/out/get/*', message => {
+                this.requestManager.handleResponse(message);
+            })
             .on('/eos/out/notify/cue/{cueList}', (message, params) => {
                 this.emitRecordTargetChange(
                     'cue',

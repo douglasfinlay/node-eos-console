@@ -71,7 +71,9 @@ export class EtcDiscovery extends EventEmitter {
                 address: '0.0.0.0',
                 port: 0,
             },
-            () => this.onSocketListening(),
+            () => {
+                this.onSocketListening();
+            },
         );
     }
 
@@ -119,7 +121,9 @@ export class EtcDiscovery extends EventEmitter {
         });
 
         this.discover();
-        this.timer = setInterval(() => this.discover(), this.discoveryInterval);
+        this.timer = setInterval(() => {
+            this.discover();
+        }, this.discoveryInterval);
     }
 
     private handleReply(data: Uint8Array, info: udp.RemoteInfo) {

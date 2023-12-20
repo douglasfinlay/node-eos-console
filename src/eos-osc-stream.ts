@@ -69,7 +69,7 @@ export class EosOscStream extends Duplex {
         const data = osc.toBuffer(message);
         const buffer = slip.encode(data);
 
-        this.log?.('debug', `Write: ${message}`);
+        this.log?.('debug', `Write: ${message.toString()}`);
 
         this.socket.write(buffer, encoding, callback);
     }
@@ -96,7 +96,12 @@ export class EosOscStream extends Duplex {
         try {
             packet = osc.fromBuffer(frame);
         } catch (err) {
-            this.log?.('error', `Malformed OSC packet: ${err}`);
+            if (err instanceof Error) {
+                this.log?.('error', `Malformed OSC packet: ${err.message}`);
+            } else {
+                this.log?.('error', 'Malformed OSC packet');
+            }
+
             return;
         }
 
@@ -114,7 +119,7 @@ export class EosOscStream extends Duplex {
     }
 
     private onMessageReceived(message: OscMessage) {
-        this.log?.('debug', `Read: ${message}`);
+        this.log?.('debug', `Read: ${message.toString()}`);
 
         const fullMessage = this.argumentListJoiner.process(message);
 
