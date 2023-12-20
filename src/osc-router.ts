@@ -1,10 +1,25 @@
 import { LogHandler } from './log';
 import { OscMessage } from './osc';
 
-export type OscRouteHandler = (
+export type OscRouteHandler<Address extends string = string> = (
     message: OscMessage,
-    params: Record<string, string>,
+    params: OscRouteParamMap<Address>,
 ) => void;
+
+export type OscRouteParamMap<Address> = {
+    [Key in AddressParams<Address>]: string;
+};
+
+type AddressParams<Address> = Address extends `/${infer RemainingAddress}`
+    ? RemainingAddressParams<RemainingAddress>
+    : never;
+
+type RemainingAddressParams<Address> =
+    Address extends `${infer Token1}/${infer Token2}`
+        ? ParamName<Token1> | RemainingAddressParams<Token2>
+        : ParamName<Address>;
+
+type ParamName<Token> = Token extends `{${infer Param}}` ? Param : never;
 
 interface OscTreeNode {
     type: string;
@@ -40,7 +55,10 @@ export class OscRouter {
 
     constructor(private log?: LogHandler) {}
 
-    on(addressPattern: string, handler: OscRouteHandler): this {
+    on<OscAddress extends string>(
+        addressPattern: OscAddress,
+        handler: OscRouteHandler<OscAddress>,
+    ): this {
         // TODO: validate addressPattern
 
         const segments = addressPattern.split('/').slice(1);

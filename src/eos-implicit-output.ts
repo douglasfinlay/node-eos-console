@@ -9,6 +9,7 @@ import {
     EosWheelMode,
 } from './eos-types';
 import { OscMessage } from './osc';
+import { OscRouteParamMap } from './osc-router';
 import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 export type EosImplicitOutput =
@@ -37,121 +38,121 @@ export type EosImplicitOutput =
     | EosRelayEvent;
 
 interface EosUserOutput {
-    type: 'user';
+    event: 'user';
     userId: number;
 }
 
 interface EosCmdOutput {
-    type: 'cmd';
+    event: 'cmd';
     commandLine: string;
 }
 
 interface EosUserCmdOutput {
-    type: 'user-cmd';
+    event: 'user-cmd';
     userId: number;
     commandLine: string;
 }
 
 interface EosShowNameOutput {
-    type: 'show-name';
+    event: 'show-name';
     showName: string;
 }
 
 interface EosCueOutput {
-    type: 'active-cue';
+    event: 'active-cue';
     cue: EosCueIdentifier;
 }
 
 interface EosNullableCueOutput {
-    type: 'pending-cue' | 'previous-cue';
+    event: 'pending-cue' | 'previous-cue';
     cue: EosCueIdentifier | null;
 }
 
 interface EosSoftKeyOutput {
-    type: 'soft-key';
+    event: 'soft-key';
     index: number;
     label: string;
 }
 
 interface EosCueTextOutput {
-    type: 'active-cue-text' | 'pending-cue-text' | 'previous-cue-text';
+    event: 'active-cue-text' | 'pending-cue-text' | 'previous-cue-text';
     text: string;
 }
 
 interface EosActiveCuePercentOutput {
-    type: 'active-cue-percent';
+    event: 'active-cue-percent';
     percentComplete: number;
 }
 
 interface EosStateOutput {
-    type: 'state';
+    event: 'state';
     state: EosState;
 }
 
 interface EosLockedOutput {
-    type: 'locked';
+    event: 'locked';
     locked: boolean;
 }
 
 interface EosColorHueSatOutput {
-    type: 'color-hs';
+    event: 'color-hs';
     color: EosColorHueSat | null;
 }
 
 interface EosFocusPanTiltOutput {
-    type: 'focus-pan-tilt';
+    event: 'focus-pan-tilt';
     focus: EosFocusPanTilt | null;
 }
 
 interface EosFocusXYZOutput {
-    type: 'focus-xyz';
+    event: 'focus-xyz';
     focus: EosFocusXYZ | null;
 }
 
 interface EosActiveWheelOutput {
-    type: 'active-wheel';
+    event: 'active-wheel';
     index: number;
     wheel: EosWheel | null;
 }
 
 interface EosActiveChannelOutput {
-    type: 'active-channel';
+    event: 'active-channel';
     channels: TargetNumber[];
 }
 
 interface EosShowClearedOutput {
-    type: 'show-cleared';
+    event: 'show-cleared';
 }
 
 interface EosShowFilePathOutput {
-    type: 'show-loaded' | 'show-saved';
+    event: 'show-loaded' | 'show-saved';
     filePath: string;
 }
 
 interface EosCuePlaybackEvent {
-    type: 'cue-fired' | 'cue-stopped';
+    event: 'cue-fired' | 'cue-stopped';
     cue: EosCueIdentifier;
     label: string;
 }
 
 interface EosWheelModeOutput {
-    type: 'wheel-mode' | 'switch-mode';
+    event: 'wheel-mode' | 'switch-mode';
     mode: EosWheelMode;
 }
 
 interface EosMacroEvent {
-    type: 'macro-fired';
+    event: 'macro-fired';
     macro: TargetNumber;
 }
 
 interface EosSubEvent {
-    type: 'sub-bumped';
+    event: 'sub-bumped';
     sub: TargetNumber;
     bump: boolean;
 }
 
 interface EosRelayEvent {
-    type: 'relay-state';
+    event: 'relay-state';
     group: number;
     relay: number;
     active: boolean;
@@ -176,16 +177,91 @@ const WHEEL_MODE_LOOKUP: Record<number, EosWheelMode> = {
     1: 'fine',
 };
 
-type ImplicitOutputHandler = (
-    message: OscMessage,
-    params: Record<string, string>,
-) => EosImplicitOutput;
+type ImplicitOutputHandler<
+    Address extends `/eos/out/${string}`,
+    Output extends EosImplicitOutput,
+> = (message: OscMessage, params: OscRouteParamMap<Address>) => Output;
 
-type ImplicitOutput = Record<string, ImplicitOutputHandler>;
+interface ImplicitOutputTypeMap {
+    '/eos/out/color/hs': EosColorHueSatOutput;
+    '/eos/out/pantilt': EosFocusPanTiltOutput;
+    '/eos/out/xyz': EosFocusXYZOutput;
+    '/eos/out/softkey/{softkey}': EosSoftKeyOutput;
+
+    //
+    // Command Lines
+    //
+    '/eos/out/cmd': EosCmdOutput;
+    '/eos/out/user/{userId}/cmd': EosUserCmdOutput;
+
+    //
+    // Settings
+    //
+    '/eos/out/switch': EosWheelModeOutput;
+    '/eos/out/user': EosUserOutput;
+    '/eos/out/wheel': EosWheelModeOutput;
+
+    //
+    // Active Channels and Parameters
+    //
+    '/eos/out/active/chan': EosActiveChannelOutput;
+    '/eos/out/active/wheel/{wheelNumber}': EosActiveWheelOutput;
+
+    //
+    // Cues
+    //
+    '/eos/out/active/cue': EosActiveCuePercentOutput;
+    '/eos/out/active/cue/{cueList}/{cueNumber}': EosCueOutput;
+    '/eos/out/active/cue/text': EosCueTextOutput;
+    '/eos/out/pending/cue': EosNullableCueOutput;
+    '/eos/out/pending/cue/{cueList}/{cueNumber}': EosNullableCueOutput;
+    '/eos/out/pending/cue/text': EosCueTextOutput;
+    '/eos/out/previous/cue': EosNullableCueOutput;
+    '/eos/out/previous/cue/{cueList}/{cueNumber}': EosNullableCueOutput;
+    '/eos/out/previous/cue/text': EosCueTextOutput;
+
+    //
+    // TODO: Direct Select Banks
+    //
+
+    //
+    // TODO: Fader Banks
+    //
+
+    //
+    // Show Control Events
+    //
+    '/eos/out/event/cue/{cueList}/{cueNumber}/fire': EosCuePlaybackEvent;
+    '/eos/out/event/cue/{cueList}/{cueNumber}/stop': EosCuePlaybackEvent;
+    '/eos/out/event/macro/{macroNumber}': EosMacroEvent;
+    '/eos/out/event/relay/{relayNumber}/{groupNumber}': EosRelayEvent;
+    '/eos/out/event/sub/{subNumber}': EosSubEvent;
+
+    //
+    // Show File Information
+    //
+    '/eos/out/show/name': EosShowNameOutput;
+    '/eos/out/event/show/loaded': EosShowFilePathOutput;
+    '/eos/out/event/show/saved': EosShowFilePathOutput;
+    '/eos/out/event/show/cleared': EosShowClearedOutput;
+
+    //
+    // Miscellaneous Console Events
+    //
+    '/eos/out/event/locked': EosLockedOutput;
+    '/eos/out/event/state': EosStateOutput;
+}
+
+type ImplicitOutput = {
+    [Key in keyof ImplicitOutputTypeMap]: ImplicitOutputHandler<
+        Key,
+        ImplicitOutputTypeMap[Key]
+    >;
+};
 
 export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     '/eos/out/color/hs': message => ({
-        type: 'color-hs',
+        event: 'color-hs',
         color:
             message.args.length === 2
                 ? {
@@ -196,7 +272,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/pantilt': message => ({
-        type: 'focus-pan-tilt',
+        event: 'focus-pan-tilt',
         focus:
             message.args.length === 6
                 ? {
@@ -215,7 +291,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/xyz': message => ({
-        type: 'focus-xyz',
+        event: 'focus-xyz',
         focus:
             message.args.length === 3
                 ? {
@@ -227,45 +303,45 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/softkey/{softkey}': (message, params) => ({
-        type: 'soft-key',
+        event: 'soft-key',
         index: Number(params.softkey) - 1,
         label: message.args[0].getString(),
     }),
 
     //
-    // OSC Command Lines
+    // Command Lines
     //
     '/eos/out/cmd': message => ({
-        type: 'cmd',
+        event: 'cmd',
         commandLine: message.args[0].getString(),
     }),
 
     '/eos/out/user/{userId}/cmd': (message, params) => ({
-        type: 'user-cmd',
+        event: 'user-cmd',
         userId: Number(params.userId),
         commandLine: message.args[0].getString(),
     }),
 
     //
-    // OSC Settings
+    // Settings
     //
     '/eos/out/switch': message => ({
-        type: 'switch-mode',
+        event: 'switch-mode',
         mode: WHEEL_MODE_LOOKUP[message.args[0].getInteger()],
     }),
 
     '/eos/out/user': message => ({
-        type: 'user',
+        event: 'user',
         userId: message.args[0].getInteger(),
     }),
 
     '/eos/out/wheel': message => ({
-        type: 'wheel-mode',
+        event: 'wheel-mode',
         mode: WHEEL_MODE_LOOKUP[message.args[0].getInteger()],
     }),
 
     //
-    // OSC Active Channels and Parameters
+    // Active Channels and Parameters
     //
     '/eos/out/active/chan': message => {
         const rawChannels = message.args[0].getString();
@@ -279,7 +355,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         );
 
         return {
-            type: 'active-channel',
+            event: 'active-channel',
             channels: channels,
         };
     },
@@ -302,17 +378,17 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         }
 
         return {
-            type: 'active-wheel',
+            event: 'active-wheel',
             index: Number(params.wheelNumber) - 1,
             wheel,
         };
     },
 
     //
-    // OSC Cues
+    // Cues
     //
     '/eos/out/active/cue/{cueList}/{cueNumber}': (_, params) => ({
-        type: 'active-cue',
+        event: 'active-cue',
         cue: {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
@@ -320,22 +396,22 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/active/cue': message => ({
-        type: 'active-cue-percent',
+        event: 'active-cue-percent',
         percentComplete: message.args[0].getInteger(),
     }),
 
     '/eos/out/active/cue/text': message => ({
-        type: 'active-cue-text',
+        event: 'active-cue-text',
         text: message.args[0].getString(),
     }),
 
     '/eos/out/pending/cue': () => ({
-        type: 'pending-cue',
+        event: 'pending-cue',
         cue: null,
     }),
 
     '/eos/out/pending/cue/{cueList}/{cueNumber}': (_, params) => ({
-        type: 'pending-cue',
+        event: 'pending-cue',
         cue: {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
@@ -343,17 +419,17 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/pending/cue/text': message => ({
-        type: 'pending-cue-text',
+        event: 'pending-cue-text',
         text: message.args[0].getString(),
     }),
 
     '/eos/out/previous/cue': () => ({
-        type: 'previous-cue',
+        event: 'previous-cue',
         cue: null,
     }),
 
     '/eos/out/previous/cue/{cueList}/{cueNumber}': (_, params) => ({
-        type: 'previous-cue',
+        event: 'previous-cue',
         cue: {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
@@ -361,23 +437,23 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/previous/cue/text': message => ({
-        type: 'previous-cue-text',
+        event: 'previous-cue-text',
         text: message.args[0].getString(),
     }),
 
     //
-    // TODO: OSC Direct Select Banks
+    // TODO: Direct Select Banks
     //
 
     //
-    // TODO: OSC Fader Banks
+    // TODO: Fader Banks
     //
 
     //
-    // OSC Show Control Events
+    // Show Control Events
     //
     '/eos/out/event/cue/{cueList}/{cueNumber}/fire': (message, params) => ({
-        type: 'cue-fired',
+        event: 'cue-fired',
         cue: {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
@@ -386,7 +462,7 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/event/cue/{cueList}/{cueNumber}/stop': (message, params) => ({
-        type: 'cue-stopped',
+        event: 'cue-stopped',
         cue: {
             cueList: Number(params.cueList),
             cueNumber: Number(params.cueNumber),
@@ -395,55 +471,55 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     }),
 
     '/eos/out/event/macro/{macroNumber}': (_, params) => ({
-        type: 'macro-fired',
+        event: 'macro-fired',
         macro: Number(params.macroNumber),
     }),
 
     '/eos/out/event/relay/{relayNumber}/{groupNumber}': (message, params) => ({
-        type: 'relay-state',
+        event: 'relay-state',
         active: !!message.args[0],
         group: Number(params.groupNumber),
         relay: Number(params.relayNumber),
     }),
 
     '/eos/out/event/sub/{subNumber}': (message, params) => ({
-        type: 'sub-bumped',
+        event: 'sub-bumped',
         sub: Number(params.subNumber),
         bump: !!message.args[0].getInteger(),
     }),
 
     //
-    // OSC Show File Information
+    // Show File Information
     //
     '/eos/out/show/name': message => ({
-        type: 'show-name',
+        event: 'show-name',
         showName: message.args[0].getString(),
     }),
 
     '/eos/out/event/show/loaded': message => ({
-        type: 'show-loaded',
+        event: 'show-loaded',
         filePath: message.args[0].getString(),
     }),
 
     '/eos/out/event/show/saved': message => ({
-        type: 'show-saved',
+        event: 'show-saved',
         filePath: message.args[0].getString(),
     }),
 
     '/eos/out/event/show/cleared': () => ({
-        type: 'show-cleared',
+        event: 'show-cleared',
     }),
 
     //
-    // OSC Miscellaneous Console Events
+    // Miscellaneous Console Events
     //
     '/eos/out/event/locked': message => ({
-        type: 'locked',
+        event: 'locked',
         locked: !!message.args[0].getInteger(),
     }),
 
     '/eos/out/event/state': message => ({
-        type: 'state',
+        event: 'state',
         state: STATE_LOOKUP[message.args[0].getInteger()],
     }),
 };

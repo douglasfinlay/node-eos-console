@@ -608,7 +608,7 @@ export class EosConsole extends EventEmitter {
     private updateStateFromImplicitOutput(output: EosImplicitOutput) {
         // TODO: we should be able to determine the implicit output type from the
         // route that handled it, making this switch redundant
-        switch (output.type) {
+        switch (output.event) {
             case 'active-channel':
                 this._activeChannels = output.channels;
                 break;
@@ -662,7 +662,7 @@ export class EosConsole extends EventEmitter {
 
                 this.updateStateFromImplicitOutput(implicitOutput);
 
-                const { type: event, ...payload } = implicitOutput;
+                const { event, ...payload } = implicitOutput;
                 this.emit(event, payload);
             });
         }
