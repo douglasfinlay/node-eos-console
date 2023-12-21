@@ -45,7 +45,6 @@ export type GetRecordTargetListProgressCallback = (
 type EosConsoleEvents = {
     connect: () => void;
     connecting: () => void;
-    connectError: (err: Error) => void;
     disconnect: () => void;
     'record-target-change': (
         targetType: RecordTargetType,
@@ -172,7 +171,6 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
                 clearTimeout(timer);
                 this.socket?.off('ready', handleReady);
 
-                this.emit('connectError', err);
                 reject(err);
             };
 
@@ -181,7 +179,6 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
                 this.socket?.off('error', handleConnectError);
                 this.socket?.off('ready', handleReady);
 
-                this.emit('connectError', new Error('timed out'));
                 reject(new Error('timed out'));
             };
 
