@@ -1,3 +1,4 @@
+import { TargetNumber } from './eos-types';
 import { OscMessage } from './osc';
 import {
     Cue,
@@ -17,7 +18,6 @@ import {
     Snapshot,
     Sub,
 } from './record-targets';
-import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 /**
  * Prepares an `/eos/get/...` OSC request then collects, validates, and parses
@@ -199,12 +199,12 @@ export class EosCueRequest extends EosRecordTargetRequest<Cue> {
             scene: messages[0].args[28].getString(),
             sceneEnd: messages[0].args[29].getBoolean(),
             cuePartIndex: messages[0].args[30].getOptionalInteger(),
-            effects: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
-            linkedCueLists: expandTargetNumberArguments(
-                messages[2].args.slice(2).map(arg => arg.value),
-            ),
+            effects: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
+            linkedCueLists: messages[2].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
             externalLinkAction: messages[3].args[2]?.getString() ?? null,
         };
     }
@@ -234,9 +234,9 @@ export class EosCueListRequest extends EosRecordTargetRequest<CueList> {
             solo: messages[0].args[10].getBoolean(),
             timecodeList: messages[0].args[11].getOptionalInteger(),
             oosSync: messages[0].args[12].getBoolean(),
-            linkedCueLists: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
+            linkedCueLists: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
         };
     }
 }
@@ -296,9 +296,9 @@ export class EosGroupRequest extends EosRecordTargetRequest<Group> {
             targetType: 'group',
             targetNumber: Number(messages[0].address.split('/')[5]),
             ...unpackBaseRecordTarget(messages[0]),
-            channels: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
+            channels: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
         };
     }
 }
@@ -366,12 +366,12 @@ export class EosPaletteRequest extends EosRecordTargetRequest<Palette> {
             ...unpackBaseRecordTarget(messages[0]),
             absolute: messages[0].args[3].getBoolean(),
             locked: messages[0].args[4].getBoolean(),
-            channels: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
-            byTypeChannels: expandTargetNumberArguments(
-                messages[2].args.slice(2).map(arg => arg.value),
-            ),
+            channels: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
+            byTypeChannels: messages[2].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
         };
     }
 }
@@ -439,9 +439,9 @@ export class EosPixelMapRequest extends EosRecordTargetRequest<PixelMap> {
             height: messages[0].args[6].getInteger(),
             pixelCount: messages[0].args[7].getInteger(),
             fixtureCount: messages[0].args[8].getInteger(),
-            layerChannels: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
+            layerChannels: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
         };
     }
 }
@@ -462,15 +462,15 @@ export class EosPresetRequest extends EosRecordTargetRequest<Preset> {
             ...unpackBaseRecordTarget(messages[0]),
             absolute: messages[0].args[3].getBoolean(),
             locked: messages[0].args[4].getBoolean(),
-            channels: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
-            byTypeChannels: expandTargetNumberArguments(
-                messages[2].args.slice(2).map(arg => arg.value),
-            ),
-            effects: expandTargetNumberArguments(
-                messages[3].args.slice(2).map(arg => arg.value),
-            ),
+            channels: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
+            byTypeChannels: messages[2].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
+            effects: messages[3].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
         };
     }
 }
@@ -517,9 +517,9 @@ export class EosSubRequest extends EosRecordTargetRequest<Sub> {
             upTime: messages[0].args[10].getString(),
             dwellTime: messages[0].args[11].getString(),
             downTime: messages[0].args[12].getString(),
-            effects: expandTargetNumberArguments(
-                messages[1].args.slice(2).map(arg => arg.value),
-            ),
+            effects: messages[1].args
+                .slice(2)
+                .flatMap(arg => arg.getTargetNumberRange()),
         };
     }
 }

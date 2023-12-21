@@ -1,4 +1,4 @@
-import { TargetNumber } from './target-number';
+import { TargetNumber } from './eos-types';
 
 export interface RecordTargets {
     patch: Patch;

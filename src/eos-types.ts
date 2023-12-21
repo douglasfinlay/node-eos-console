@@ -1,4 +1,4 @@
-import { TargetNumber } from './target-number';
+export type TargetNumber = number;
 
 export interface EosColorHueSat {
     hue: number;

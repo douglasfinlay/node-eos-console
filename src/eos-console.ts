@@ -3,6 +3,7 @@ import { inspect } from 'node:util';
 import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
 import { EosOscStream } from './eos-osc-stream';
 import * as types from './eos-types';
+import { TargetNumber } from './eos-types';
 import { LogHandler } from './log';
 import { OscArgument, OscMessage } from './osc';
 import { OscRouter } from './osc-router';
@@ -16,7 +17,6 @@ import {
 } from './record-targets';
 import * as requests from './request';
 import { RequestManager } from './request-manager';
-import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -608,10 +608,12 @@ export class EosConsole extends EventEmitter {
 
     private emitRecordTargetChange(
         targetType: RecordTargetType,
-        targetNumberArgs: unknown[],
+        targetNumberArgs: OscArgument[],
         ...extraArgs: unknown[]
     ) {
-        const targetNumbers = expandTargetNumberArguments(targetNumberArgs);
+        const targetNumbers = targetNumberArgs.flatMap(arg =>
+            arg.getTargetNumberRange(),
+        );
         this.emit('record-target-change', targetType, targetNumbers, extraArgs);
     }
 

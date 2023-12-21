@@ -1,6 +1,6 @@
 export * from './discovery';
 export * from './eos-console';
-export { EosCueIdentifier } from './eos-types';
+export { EosCueIdentifier, TargetNumber } from './eos-types';
 export {
     Channel,
     ChannelPart,
@@ -19,4 +19,3 @@ export {
     Snapshot,
     Sub,
 } from './record-targets';
-export { TargetNumber } from './target-number';

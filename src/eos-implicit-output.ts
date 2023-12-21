@@ -7,10 +7,10 @@ import {
     EosWheel,
     EosWheelCategory,
     EosWheelMode,
+    TargetNumber,
 } from './eos-types';
-import { OscMessage } from './osc';
+import { OscMessage, parseTargetNumberRange } from './osc';
 import { OscRouteParamMap } from './osc-router';
-import { TargetNumber, expandTargetNumberArguments } from './target-number';
 
 export type EosImplicitOutput =
     | EosCmdOutput
@@ -347,16 +347,13 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         const rawChannels = message.args[0].getString();
         const i = rawChannels.indexOf(' ');
 
-        const channels = expandTargetNumberArguments(
-            rawChannels
-                .substring(0, i)
-                .split(',')
-                .filter(x => x.length),
-        );
-
         return {
             event: 'active-channel',
-            channels: channels,
+            channels: rawChannels
+                .substring(0, i)
+                .split(',')
+                .filter(x => x.length)
+                .flatMap(parseTargetNumberRange),
         };
     },
 
