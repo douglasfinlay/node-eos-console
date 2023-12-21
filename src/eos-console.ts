@@ -1,6 +1,9 @@
-import { EventEmitter } from 'node:events';
-import { inspect } from 'node:util';
-import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
+import { EventEmitter } from 'eventemitter3';
+import {
+    EOS_IMPLICIT_OUTPUT,
+    EosImplicitOutput,
+    ImplicitOutputEvents,
+} from './eos-implicit-output';
 import { EosOscStream } from './eos-osc-stream';
 import * as types from './eos-types';
 import { TargetNumber } from './eos-types';
@@ -39,7 +42,20 @@ export type GetRecordTargetListProgressCallback = (
     total: number,
 ) => void;
 
-export class EosConsole extends EventEmitter {
+type EosConsoleEvents = {
+    connect: () => void;
+    connecting: () => void;
+    connectError: (err: Error) => void;
+    disconnect: () => void;
+    'record-target-change': (
+        targetType: RecordTargetType,
+        targetNumbers: TargetNumber[],
+        extraArgs: unknown[],
+    ) => void;
+    osc: (message: OscMessage) => void;
+} & ImplicitOutputEvents;
+
+export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private _connectionState: EosConnectionState = 'disconnected';
     private log?: LogHandler;
     private requestManager = new RequestManager();
@@ -576,18 +592,18 @@ export class EosConsole extends EventEmitter {
     }
 
     // FIXME: this only exists to allow some quick and dirty testing!
-    override emit(eventName: string | symbol, ...args: unknown[]): boolean {
-        if (eventName !== 'log') {
-            this.log?.(
-                'verbose',
-                `Event: ${String(eventName)} - ${args
-                    .map(a => inspect(a))
-                    .join(', ')}`,
-            );
-        }
+    // override emit(eventName: string | symbol, ...args: unknown[]): boolean {
+    //     if (eventName !== 'log') {
+    //         this.log?.(
+    //             'verbose',
+    //             `Event: ${String(eventName)} - ${args
+    //                 .map(a => inspect(a))
+    //                 .join(', ')}`,
+    //         );
+    //     }
 
-        return super.emit(eventName, ...args);
-    }
+    //     return super.emit(eventName, ...args);
+    // }
 
     private clearState() {
         this._activeChannels = undefined;
