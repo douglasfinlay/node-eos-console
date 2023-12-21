@@ -22,7 +22,7 @@ export class OscArgumentListJoiner {
 
         if (matches) {
             // Strip the `/list/<list index>/<list count>` suffix
-            const address = message.address.substring(0, matches.index);
+            message.address = message.address.substring(0, matches.index);
             const expectedArgCount = parseInt(matches[2]);
 
             // If a partial set of args has been received, we need to accumulate
@@ -33,8 +33,8 @@ export class OscArgumentListJoiner {
                 // First message; store with its partial list of arguments
                 if (argListIndex === 0) {
                     this.partialMessage = new OscMessage(
-                        address,
-                        message.args.slice(),
+                        message.address,
+                        message.args,
                     );
 
                     return null;

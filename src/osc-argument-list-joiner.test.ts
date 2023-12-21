@@ -73,5 +73,22 @@ describe('OSC argument list joiner', () => {
                 );
             });
         });
+
+        it('Should strip the list convention suffix from single messages', () => {
+            const message = joiner.process(
+                new OscMessage('/demo/message/list/0/2', ['a', 'b']),
+            );
+            assert.equal(message?.address, '/demo/message');
+        });
+
+        it('Should strip the list convention suffix from split messages', () => {
+            joiner.process(
+                new OscMessage('/demo/message/list/0/6', ['a', 'b', 'c']),
+            );
+            const message = joiner.process(
+                new OscMessage('/demo/message/list/3/6', ['d', 'e', 'f']),
+            );
+            assert.equal(message?.address, '/demo/message');
+        });
     });
 });

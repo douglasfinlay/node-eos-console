@@ -703,11 +703,7 @@ export class EosConsole extends EventEmitter {
                 message =>
                     this.log?.(
                         'warn',
-                        `Unhandled OSC message "${
-                            message.address
-                        }", args: [ ${message.args
-                            .map(arg => JSON.stringify(arg))
-                            .join(',')} ]`,
+                        `Unhandled OSC message: ${message.toString()}`,
                     ),
             )
             .on('/*', message => this.emit('osc', message));
