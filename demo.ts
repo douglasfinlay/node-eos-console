@@ -6,15 +6,15 @@ import { EosConsole } from './src/eos-console';
     await eos.connect();
     await eos.changeUser(1);
 
-    const macros = await eos.getMacros();
+    const macros = await eos.macros.getAll();
     console.log(macros);
 
-    const groups = await eos.getGroups();
+    const groups = await eos.groups.getAll();
     console.log(groups);
 
-    const cueLists = await eos.getCueLists();
+    const cueLists = await eos.cueLists.getAll();
     console.log(cueLists);
 
-    const cues = await eos.getCues(1);
+    const cues = await eos.cues.getAll(1);
     console.log(cues);
 })();
