@@ -1,5 +1,5 @@
 import { OscMessage } from './osc';
-import { EosRequest } from './request';
+import { Request } from './requests';
 
 export class RequestManager {
     private inflightRequests: InflightRequest[] = [];
@@ -33,7 +33,7 @@ export class RequestManager {
         }
     }
 
-    register<T>(request: EosRequest<T>): Promise<T> {
+    register<T>(request: Request<T>): Promise<T> {
         const completer = new Deferred<T>();
 
         this.inflightRequests.push({
@@ -61,5 +61,5 @@ class Deferred<T = unknown> {
 
 interface InflightRequest<T = unknown> {
     completer: Deferred<T>;
-    handler: EosRequest<T>;
+    handler: Request<T>;
 }

@@ -2,12 +2,12 @@ import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 import { OscMessage } from './osc';
-import { EosRequest } from './request';
+import { Request } from './requests';
 import { RequestManager } from './request-manager';
 
 chai.use(chaiAsPromised);
 
-class TestRequest extends EosRequest<number> {
+class TestRequest extends Request<number> {
     constructor(private id: number) {
         super();
     }
