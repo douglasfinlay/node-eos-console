@@ -404,6 +404,9 @@ export class EosConsole extends EventEmitter {
         ]);
     }
 
+    /**
+     * @internal
+     */
     async request<T>(request: requests.Request<T>): Promise<T> {
         const response = this.requestManager.register(request);
 
