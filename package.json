@@ -1,6 +1,6 @@
 {
   "name": "eos-console",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Library to interface with ETC Eos Family lighting consoles.",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
