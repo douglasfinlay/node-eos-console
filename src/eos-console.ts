@@ -5,18 +5,12 @@ import { EosOscStream } from './eos-osc-stream';
 import * as types from './eos-types';
 import { TargetNumber } from './eos-types';
 import { LogHandler } from './log';
+import * as modules from './modules';
 import { OscArgument, OscMessage } from './osc';
 import { OscRouter } from './osc-router';
-import {
-    Channel,
-    ChannelPart,
-    Cue,
-    Patch,
-    RecordTargetType,
-    RecordTargets,
-} from './record-targets';
-import * as requests from './requests';
+import { RecordTargetType } from './record-targets';
 import { RequestManager } from './request-manager';
+import * as requests from './requests';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -63,6 +57,23 @@ export class EosConsole extends EventEmitter {
 
     readonly host: string;
     readonly port: number;
+
+    readonly beamPalettes = new modules.PalettesModule(this, 'bp');
+    readonly channels = new modules.ChannelsModule(this);
+    readonly colorPalettes = new modules.PalettesModule(this, 'cp');
+    readonly cueLists = new modules.CueListsModule(this);
+    readonly cues = new modules.CuesModule(this);
+    readonly curves = new modules.CurvesModule(this);
+    readonly effects = new modules.PresetsModule(this);
+    readonly focusPalettes = new modules.PalettesModule(this, 'fp');
+    readonly groups = new modules.GroupsModule(this);
+    readonly intensityPalettes = new modules.PalettesModule(this, 'ip');
+    readonly macros = new modules.MacrosModule(this);
+    readonly magicSheets = new modules.MagicSheetsModule(this);
+    readonly pixelMaps = new modules.PixelMapsModule(this);
+    readonly presets = new modules.PresetsModule(this);
+    readonly snapshots = new modules.SnapshotsModule(this);
+    readonly subs = new modules.SubsModule(this);
 
     get activeChannels() {
         return this._activeChannels;
@@ -239,285 +250,6 @@ export class EosConsole extends EventEmitter {
         await this.sendMessage(address, [command, ...substitutions]);
     }
 
-    async fireCue(cueListNumber: TargetNumber, cueNumber: TargetNumber) {
-        await this.sendMessage(`/eos/cue/${cueListNumber}/${cueNumber}/fire`);
-    }
-
-    async getCue(cueList: TargetNumber, targetNumber: TargetNumber) {
-        return this.request(requests.CueRequest.get(targetNumber, cueList));
-    }
-
-    async getCues(
-        cueList: TargetNumber,
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        const total = await this.request(
-            new requests.RecordTargetCountRequest('cue', cueList),
-        );
-
-        if (total === 0) {
-            return [];
-        }
-
-        let completedCount = 0;
-
-        const cueRequests = new Array<Promise<Cue | null>>(total);
-
-        for (let i = 0; i < total; i++) {
-            cueRequests[i] = this.request(
-                requests.CueRequest.index(i, cueList),
-            ).then(cue => {
-                completedCount += 1;
-                progressCallback?.(completedCount, total);
-
-                return cue;
-            });
-        }
-
-        const cues = await Promise.all(cueRequests);
-
-        if (cues.includes(null)) {
-            throw new Error(
-                'null record target found when requesting record target list "cue"',
-            );
-        }
-
-        return cues as Cue[];
-    }
-
-    async getCueList(targetNumber: TargetNumber) {
-        return this.request(requests.CueListRequest.get(targetNumber));
-    }
-
-    async getCueLists(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'cuelist',
-            i => requests.CueListRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getCurve(targetNumber: TargetNumber) {
-        return this.request(requests.CurveRequest.get(targetNumber));
-    }
-
-    async getCurves(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'curve',
-            i => requests.CurveRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getGroup(targetNumber: TargetNumber) {
-        return this.request(requests.GroupRequest.get(targetNumber));
-    }
-
-    async getGroups(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'group',
-            i => requests.GroupRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getEffect(targetNumber: TargetNumber) {
-        return this.request(requests.EffectRequest.get(targetNumber));
-    }
-
-    async getEffects(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'fx',
-            i => requests.EffectRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getMacro(targetNumber: TargetNumber) {
-        return this.request(requests.MacroRequest.get(targetNumber));
-    }
-
-    async getMacros(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'macro',
-            i => requests.MacroRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getMagicSheet(targetNumber: TargetNumber) {
-        return this.request(requests.MagicSheetRequest.get(targetNumber));
-    }
-
-    async getMagicSheets(
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        return this.getRecordTargetList(
-            'ms',
-            i => requests.MagicSheetRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getChannel(targetNumber: TargetNumber) {
-        // Make an initial request to determine the number of parts
-        const firstPart = await this.request(
-            requests.PatchRequest.get(targetNumber, 1),
-        );
-
-        if (!firstPart) {
-            return null;
-        }
-
-        // Request the remaining parts if there are any
-        const remainingPartRequests: Promise<Patch | null>[] = [];
-
-        for (let part = 2; part <= firstPart.partCount; part++) {
-            remainingPartRequests.push(
-                this.request(requests.PatchRequest.get(targetNumber, part)),
-            );
-        }
-
-        const remainingParts = await Promise.all(remainingPartRequests);
-
-        if (remainingParts.includes(null)) {
-            throw new Error(
-                `null part found when requesting channel ${targetNumber}`,
-            );
-        }
-
-        return transformPatchToChannel([
-            firstPart,
-            ...(remainingParts as Patch[]),
-        ]);
-    }
-
-    async getPatch(progressCallback?: GetRecordTargetListProgressCallback) {
-        const patch = await this.getRecordTargetList(
-            'patch',
-            i => requests.PatchRequest.index(i),
-            progressCallback,
-        );
-
-        const groupByTargetNumber = patch.reduce<Record<number, Patch[]>>(
-            (group, entry) => {
-                const { targetNumber } = entry;
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                group[targetNumber] ??= [];
-                group[targetNumber].push(entry);
-
-                return group;
-            },
-            {},
-        );
-
-        return Object.values(groupByTargetNumber).map(transformPatchToChannel);
-    }
-
-    async getPreset(targetNumber: TargetNumber) {
-        return this.request(requests.PresetRequest.get(targetNumber));
-    }
-
-    async getPresets(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'preset',
-            i => requests.PresetRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getIntensityPalette(targetNumber: TargetNumber) {
-        return this.request(requests.PaletteRequest.get(targetNumber, 'ip'));
-    }
-
-    async getIntensityPalettes(
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        return this.getRecordTargetList(
-            'ip',
-            i => requests.PaletteRequest.index(i, 'ip'),
-            progressCallback,
-        );
-    }
-
-    async getFocusPalette(targetNumber: TargetNumber) {
-        return this.request(requests.PaletteRequest.get(targetNumber, 'fp'));
-    }
-
-    async getFocusPalettes(
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        return this.getRecordTargetList(
-            'fp',
-            i => requests.PaletteRequest.index(i, 'fp'),
-            progressCallback,
-        );
-    }
-
-    async getColorPalette(targetNumber: TargetNumber) {
-        return this.request(requests.PaletteRequest.get(targetNumber, 'cp'));
-    }
-
-    async getColorPalettes(
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        return this.getRecordTargetList(
-            'cp',
-            i => requests.PaletteRequest.index(i, 'cp'),
-            progressCallback,
-        );
-    }
-
-    async getBeamPalette(targetNumber: TargetNumber) {
-        return this.request(requests.PaletteRequest.get(targetNumber, 'bp'));
-    }
-
-    async getBeamPalettes(
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        return this.getRecordTargetList(
-            'bp',
-            i => requests.PaletteRequest.index(i, 'bp'),
-            progressCallback,
-        );
-    }
-
-    async getPixmap(targetNumber: TargetNumber) {
-        return this.request(requests.PixelMapRequest.get(targetNumber));
-    }
-
-    async getPixmaps(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'pixmap',
-            i => requests.PixelMapRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getSnapshot(targetNumber: TargetNumber) {
-        return this.request(requests.SnapshotRequest.get(targetNumber));
-    }
-
-    async getSnapshots(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'snap',
-            i => requests.SnapshotRequest.index(i),
-            progressCallback,
-        );
-    }
-
-    async getSub(targetNumber: TargetNumber) {
-        return this.request(requests.SubRequest.get(targetNumber));
-    }
-
-    async getSubs(progressCallback?: GetRecordTargetListProgressCallback) {
-        return this.getRecordTargetList(
-            'sub',
-            i => requests.SubRequest.index(i),
-            progressCallback,
-        );
-    }
-
     async sendMessage(address: string, args: unknown[] = []) {
         if (!address.startsWith('/eos/')) {
             throw new Error('message must start with "/eos/"');
@@ -528,51 +260,6 @@ export class EosConsole extends EventEmitter {
         }
 
         await this.socket?.writeOsc(new OscMessage(address, args));
-    }
-
-    private async getRecordTargetList<
-        TTargetType extends Exclude<RecordTargetType, 'cue'>,
-    >(
-        targetType: TTargetType,
-        indexRequestFactory: (
-            index: number,
-        ) => requests.EosRecordTargetRequest<RecordTargets[TTargetType]>,
-        progressCallback?: GetRecordTargetListProgressCallback,
-    ) {
-        const total = await this.request(
-            new requests.RecordTargetCountRequest(targetType),
-        );
-
-        if (total === 0) {
-            return [];
-        }
-
-        let completedCount = 0;
-
-        const requestPromises = new Array<
-            Promise<RecordTargets[TTargetType] | null>
-        >(total);
-
-        for (let i = 0; i < total; i++) {
-            requestPromises[i] = this.request(indexRequestFactory(i)).then(
-                recordTarget => {
-                    completedCount += 1;
-                    progressCallback?.(completedCount, total);
-
-                    return recordTarget;
-                },
-            );
-        }
-
-        const recordTargets = await Promise.all(requestPromises);
-
-        if (recordTargets.includes(null)) {
-            throw new Error(
-                `null record target found when requesting record target list "${targetType}"`,
-            );
-        }
-
-        return recordTargets as RecordTargets[TTargetType][];
     }
 
     // FIXME: this only exists to allow some quick and dirty testing!
@@ -717,56 +404,11 @@ export class EosConsole extends EventEmitter {
         ]);
     }
 
-    private async request<T>(request: requests.Request<T>): Promise<T> {
+    async request<T>(request: requests.Request<T>): Promise<T> {
         const response = this.requestManager.register(request);
 
         await this.socket?.writeOsc(request.outboundMessage);
 
         return response;
     }
-}
-
-function transformPatchToChannel(patchParts: Patch[]): Channel {
-    const transformKeys: (keyof ChannelPart)[] = [
-        'uid',
-        'label',
-        'address',
-        'currentLevel',
-        'fixtureManufacturer',
-        'fixtureModel',
-        'gel',
-        'intensityParameterAddress',
-        'notes',
-        'text1',
-        'text2',
-        'text3',
-        'text4',
-        'text5',
-        'text6',
-        'text7',
-        'text8',
-        'text9',
-        'text10',
-    ];
-
-    const targetNumber = patchParts[0].targetNumber;
-    const parts = patchParts.map(part => {
-        if (part.targetNumber !== targetNumber) {
-            throw new Error(
-                'unexpected target number when transforming patch entry',
-            );
-        }
-
-        return Object.fromEntries(
-            transformKeys
-                .filter(key => key in part)
-                .map(key => [key, part[key]]),
-        ) as ChannelPart;
-    });
-
-    return {
-        targetType: 'patch',
-        targetNumber,
-        parts,
-    };
 }
