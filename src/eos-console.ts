@@ -1,4 +1,5 @@
 import { EventEmitter } from 'eventemitter3';
+import { inspect } from 'node:util';
 import {
     EOS_IMPLICIT_OUTPUT,
     EosImplicitOutput,
@@ -18,8 +19,8 @@ import {
     RecordTargetType,
     RecordTargets,
 } from './record-targets';
-import * as requests from './requests';
 import { RequestManager } from './request-manager';
+import * as requests from './requests';
 
 export type EosConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -41,18 +42,6 @@ export type GetRecordTargetListProgressCallback = (
     complete: number,
     total: number,
 ) => void;
-
-type EosConsoleEvents = {
-    connect: () => void;
-    connecting: () => void;
-    disconnect: () => void;
-    'record-target-change': (
-        targetType: RecordTargetType,
-        targetNumbers: TargetNumber[],
-        extraArgs: unknown[],
-    ) => void;
-    osc: (message: OscMessage) => void;
-} & ImplicitOutputEvents;
 
 export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private _connectionState: EosConnectionState = 'disconnected';
@@ -588,19 +577,20 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         return recordTargets as RecordTargets[TTargetType][];
     }
 
-    // FIXME: this only exists to allow some quick and dirty testing!
-    // override emit(eventName: string | symbol, ...args: unknown[]): boolean {
-    //     if (eventName !== 'log') {
-    //         this.log?.(
-    //             'verbose',
-    //             `Event: ${String(eventName)} - ${args
-    //                 .map(a => inspect(a))
-    //                 .join(', ')}`,
-    //         );
-    //     }
+    override emit<T extends EosConsoleEventNames>(
+        event: T,
+        ...args: EventEmitter.ArgumentMap<EosConsoleEvents>[Extract<
+            T,
+            EosConsoleEventNames
+        >]
+    ): boolean {
+        this.log?.(
+            'verbose',
+            `Event: ${String(event)} - ${args.map(a => inspect(a)).join(', ')}`,
+        );
 
-    //     return super.emit(eventName, ...args);
-    // }
+        return super.emit(event, ...args);
+    }
 
     private clearState() {
         this._activeChannels = undefined;
@@ -783,3 +773,17 @@ function transformPatchToChannel(patchParts: Patch[]): Channel {
         parts,
     };
 }
+
+type EosConsoleEvents = {
+    connect: () => void;
+    connecting: () => void;
+    disconnect: () => void;
+    'record-target-change': (
+        targetType: RecordTargetType,
+        targetNumbers: TargetNumber[],
+        extraArgs: unknown[],
+    ) => void;
+    osc: (message: OscMessage) => void;
+} & ImplicitOutputEvents;
+
+type EosConsoleEventNames = keyof EosConsoleEvents;
