@@ -1,10 +1,9 @@
 import {
     EosConsole,
     GetRecordTargetListProgressCallback,
-    RecordTargetType,
-    TargetNumber,
-} from '..';
-import { RecordTargets } from '../record-targets';
+} from '../eos-console';
+import { TargetNumber } from '../eos-types';
+import { RecordTargetType, RecordTargets } from '../record-targets';
 import { EosRecordTargetRequest } from '../requests';
 import { RecordTargetCountRequest } from '../requests/record-target-count-request';
 import { EosConsoleModule } from './eos-console-module';

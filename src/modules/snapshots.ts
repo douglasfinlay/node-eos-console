@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { Snapshot } from '../record-targets';
 import { SnapshotRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -21,7 +22,7 @@ export class SnapshotsModule extends EosRecordTargetModule<'snap'> {
         );
     }
 
-    async get(targetNumber: number): Promise<Snapshot | null> {
+    async get(targetNumber: TargetNumber): Promise<Snapshot | null> {
         return await this.eos.request(SnapshotRequest.get(targetNumber));
     }
 }

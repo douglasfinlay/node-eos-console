@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { MagicSheet } from '../record-targets';
 import { MagicSheetRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -21,7 +22,7 @@ export class MagicSheetsModule extends EosRecordTargetModule<'ms'> {
         );
     }
 
-    async get(targetNumber: number): Promise<MagicSheet | null> {
+    async get(targetNumber: TargetNumber): Promise<MagicSheet | null> {
         return await this.eos.request(MagicSheetRequest.get(targetNumber));
     }
 }

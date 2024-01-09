@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { Palette, PaletteType } from '../record-targets';
 import { PaletteRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -24,7 +25,7 @@ export class PalettesModule extends EosRecordTargetModule<PaletteType> {
         );
     }
 
-    async get(targetNumber: number): Promise<Palette | null> {
+    async get(targetNumber: TargetNumber): Promise<Palette | null> {
         return await this.eos.request(
             PaletteRequest.get(targetNumber, this.paletteType),
         );

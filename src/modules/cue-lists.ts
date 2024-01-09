@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { CueList } from '../record-targets';
 import { CueListRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -21,7 +22,7 @@ export class CueListsModule extends EosRecordTargetModule<'cuelist'> {
         );
     }
 
-    async get(targetNumber: number): Promise<CueList | null> {
+    async get(targetNumber: TargetNumber): Promise<CueList | null> {
         return await this.eos.request(CueListRequest.get(targetNumber));
     }
 }

@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { Macro } from '../record-targets';
 import { MacroRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -21,7 +22,7 @@ export class MacrosModule extends EosRecordTargetModule<'macro'> {
         );
     }
 
-    async get(targetNumber: number): Promise<Macro | null> {
+    async get(targetNumber: TargetNumber): Promise<Macro | null> {
         return await this.eos.request(MacroRequest.get(targetNumber));
     }
 }

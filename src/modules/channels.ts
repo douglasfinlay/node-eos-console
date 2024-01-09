@@ -26,7 +26,7 @@ export class ChannelsModule extends EosConsoleModule {
             progressCallback,
         );
 
-        const groupByTargetNumber = patch.reduce<Record<number, Patch[]>>(
+        const groupByTargetNumber = patch.reduce<Record<TargetNumber, Patch[]>>(
             (group, entry) => {
                 const { targetNumber } = entry;
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -41,7 +41,7 @@ export class ChannelsModule extends EosConsoleModule {
         return Object.values(groupByTargetNumber).map(transformPatchToChannel);
     }
 
-    async get(targetNumber: number): Promise<Channel | null> {
+    async get(targetNumber: TargetNumber): Promise<Channel | null> {
         // Make an initial request to determine the number of parts
         const firstPart = await this.patchModule.get(targetNumber, 1);
 

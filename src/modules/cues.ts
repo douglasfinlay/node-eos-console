@@ -4,7 +4,6 @@ import { Cue } from '../record-targets';
 import { CueRequest, RecordTargetCountRequest } from '../requests';
 import { EosConsoleModule } from './eos-console-module';
 
-// TODO: inherit from `EosRecordTargetModule`
 export class CuesModule extends EosConsoleModule {
     async fire(cueListNumber: TargetNumber, cueNumber: TargetNumber) {
         await this.eos.sendMessage(

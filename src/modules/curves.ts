@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { Curve } from '../record-targets';
 import { CurveRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -21,7 +22,7 @@ export class CurvesModule extends EosRecordTargetModule<'curve'> {
         );
     }
 
-    async get(targetNumber: number): Promise<Curve | null> {
+    async get(targetNumber: TargetNumber): Promise<Curve | null> {
         return await this.eos.request(CurveRequest.get(targetNumber));
     }
 }

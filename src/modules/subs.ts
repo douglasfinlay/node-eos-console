@@ -2,6 +2,7 @@ import {
     EosConsole,
     GetRecordTargetListProgressCallback,
 } from '../eos-console';
+import { TargetNumber } from '../eos-types';
 import { Sub } from '../record-targets';
 import { SubRequest } from '../requests';
 import { EosRecordTargetModule } from './eos-record-target-module';
@@ -21,7 +22,7 @@ export class SubsModule extends EosRecordTargetModule<'sub'> {
         );
     }
 
-    async get(targetNumber: number): Promise<Sub | null> {
+    async get(targetNumber: TargetNumber): Promise<Sub | null> {
         return await this.eos.request(SubRequest.get(targetNumber));
     }
 }
