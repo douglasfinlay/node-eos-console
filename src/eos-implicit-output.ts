@@ -520,3 +520,14 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         state: STATE_LOOKUP[message.args[0].getInteger()],
     }),
 };
+
+export type ImplicitOutputEvents = {
+    [K in EosImplicitOutput['event']]: (
+        payload: ImplicitOutputPayload<K>,
+    ) => void;
+};
+
+type ImplicitOutputPayload<Event extends EosImplicitOutput['event']> = Omit<
+    Extract<EosImplicitOutput, { event: Event }>,
+    'event'
+>;

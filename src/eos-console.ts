@@ -1,6 +1,10 @@
-import { EventEmitter } from 'node:events';
+import { EventEmitter } from 'eventemitter3';
 import { inspect } from 'node:util';
-import { EOS_IMPLICIT_OUTPUT, EosImplicitOutput } from './eos-implicit-output';
+import {
+    EOS_IMPLICIT_OUTPUT,
+    EosImplicitOutput,
+    ImplicitOutputEvents,
+} from './eos-implicit-output';
 import { EosOscStream } from './eos-osc-stream';
 import * as types from './eos-types';
 import { TargetNumber } from './eos-types';
@@ -33,7 +37,7 @@ export type GetRecordTargetListProgressCallback = (
     total: number,
 ) => void;
 
-export class EosConsole extends EventEmitter {
+export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private _connectionState: EosConnectionState = 'disconnected';
     private log?: LogHandler;
     private requestManager = new RequestManager();
@@ -167,7 +171,6 @@ export class EosConsole extends EventEmitter {
                 clearTimeout(timer);
                 this.socket?.off('ready', handleReady);
 
-                this.emit('connectError', err);
                 reject(err);
             };
 
@@ -176,7 +179,6 @@ export class EosConsole extends EventEmitter {
                 this.socket?.off('error', handleConnectError);
                 this.socket?.off('ready', handleReady);
 
-                this.emit('connectError', new Error('timed out'));
                 reject(new Error('timed out'));
             };
 
@@ -262,18 +264,19 @@ export class EosConsole extends EventEmitter {
         await this.socket?.writeOsc(new OscMessage(address, args));
     }
 
-    // FIXME: this only exists to allow some quick and dirty testing!
-    override emit(eventName: string | symbol, ...args: unknown[]): boolean {
-        if (eventName !== 'log') {
-            this.log?.(
-                'verbose',
-                `Event: ${String(eventName)} - ${args
-                    .map(a => inspect(a))
-                    .join(', ')}`,
-            );
-        }
+    override emit<T extends EosConsoleEventNames>(
+        event: T,
+        ...args: EventEmitter.ArgumentMap<EosConsoleEvents>[Extract<
+            T,
+            EosConsoleEventNames
+        >]
+    ): boolean {
+        this.log?.(
+            'verbose',
+            `Event: ${String(event)} - ${args.map(a => inspect(a)).join(', ')}`,
+        );
 
-        return super.emit(eventName, ...args);
+        return super.emit(event, ...args);
     }
 
     private clearState() {
@@ -415,3 +418,17 @@ export class EosConsole extends EventEmitter {
         return response;
     }
 }
+
+type EosConsoleEvents = {
+    connect: () => void;
+    connecting: () => void;
+    disconnect: () => void;
+    'record-target-change': (
+        targetType: RecordTargetType,
+        targetNumbers: TargetNumber[],
+        extraArgs: unknown[],
+    ) => void;
+    osc: (message: OscMessage) => void;
+} & ImplicitOutputEvents;
+
+type EosConsoleEventNames = keyof EosConsoleEvents;
