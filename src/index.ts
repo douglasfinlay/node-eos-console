@@ -1,8 +1,26 @@
 export * from './discovery';
 export * from './eos-console';
-export * from './eos-types';
-export * from './log';
-export {
+
+export type * from './eos-types';
+export type * from './log';
+
+export type {
+    ChannelsModule,
+    CueListsModule,
+    CuesModule,
+    CurvesModule,
+    EffectsModule,
+    GroupsModule,
+    MacrosModule,
+    MagicSheetsModule,
+    PalettesModule,
+    PixelMapsModule,
+    PresetsModule,
+    SnapshotsModule,
+    SubsModule,
+} from './modules';
+
+export type {
     Channel,
     ChannelPart,
     Cue,
