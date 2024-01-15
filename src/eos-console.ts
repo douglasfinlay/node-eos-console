@@ -224,7 +224,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
                 this._connectionState = 'connected';
                 this.emit('connect');
 
-                this.getVersion()
+                this.requestVersion()
                     .then(version => {
                         this._version = version;
                         this.log?.('info', `Eos version ${version}`);
@@ -254,10 +254,6 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         this.requestManager.cancelAll(new Error('connection closed'));
     }
 
-    async getVersion(): Promise<string> {
-        return this.request(new requests.VersionRequest());
-    }
-
     async changeUser(userId: number) {
         await this.sendMessage('/eos/user', [
             new OscArgument(userId, 'integer'),
@@ -282,7 +278,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
             );
         }
 
-        await this.socket?.writeOsc(new OscMessage(address, args));
+        await this.getSocket().writeOsc(new OscMessage(address, args));
     }
 
     override emit<T extends EosConsoleEventNames>(
@@ -328,6 +324,18 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
             arg.getTargetNumberRange(),
         );
         this.emit('record-target-change', targetType, targetNumbers, extraArgs);
+    }
+
+    private async requestVersion(): Promise<string> {
+        return this.request(new requests.VersionRequest());
+    }
+
+    private getSocket() {
+        if (!this.socket || this.connectionState !== 'connected') {
+            throw new Error('not connected to Eos');
+        }
+
+        return this.socket;
     }
 
     private handleOscError(err: Error) {
@@ -451,7 +459,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private async request<T>(request: requests.Request<T>): Promise<T> {
         const response = this.requestManager.register(request);
 
-        await this.socket?.writeOsc(request.outboundMessage);
+        await this.getSocket().writeOsc(request.outboundMessage);
 
         return response;
     }
