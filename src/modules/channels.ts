@@ -1,30 +1,30 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { Channel, ChannelPart, Patch } from '../record-targets';
 import { PatchRequest } from '../requests';
-import { EosConsoleModule } from './eos-console-module';
-import { EosRecordTargetModule } from './eos-record-target-module';
+import {
+    EosConsoleModule,
+    EosConsoleModuleContext,
+} from './eos-console-module';
+import { RecordTargetModule } from './record-target-module';
 
 export class ChannelsModule extends EosConsoleModule {
-    private patchModule: PatchModule;
+    private patchModule = new PatchModule();
 
-    constructor(eos: EosConsole) {
-        super(eos);
+    override init(eos: EosConsoleModuleContext) {
+        super.init(eos);
+        this.patchModule.init(eos);
+    }
 
-        this.patchModule = new PatchModule(eos);
+    override destroy() {
+        super.destroy();
+        this.patchModule.destroy();
     }
 
     async getAll(
         progressCallback?: GetRecordTargetListProgressCallback,
     ): Promise<Channel[]> {
-        const patch = await this.patchModule.getRecordTargetList(
-            'patch',
-            i => PatchRequest.index(i),
-            progressCallback,
-        );
+        const patch = await this.patchModule.getAll(progressCallback);
 
         const groupByTargetNumber = patch.reduce<Record<TargetNumber, Patch[]>>(
             (group, entry) => {
@@ -73,9 +73,9 @@ export class ChannelsModule extends EosConsoleModule {
     }
 }
 
-export class PatchModule extends EosRecordTargetModule<'patch'> {
-    constructor(eos: EosConsole) {
-        super(eos, 'patch');
+class PatchModule extends RecordTargetModule<'patch'> {
+    constructor() {
+        super('patch');
     }
 
     async getAll(
@@ -92,7 +92,7 @@ export class PatchModule extends EosRecordTargetModule<'patch'> {
         targetNumber: TargetNumber,
         partNumber: number,
     ): Promise<Patch | null> {
-        return await this.eos.request(
+        return this.getEos().request(
             PatchRequest.get(targetNumber, partNumber),
         );
     }

@@ -1,15 +1,12 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { Group } from '../record-targets';
 import { GroupRequest } from '../requests';
-import { EosRecordTargetModule } from './eos-record-target-module';
+import { RecordTargetModule } from './record-target-module';
 
-export class GroupsModule extends EosRecordTargetModule<'group'> {
-    constructor(eos: EosConsole) {
-        super(eos, 'group');
+export class GroupsModule extends RecordTargetModule<'group'> {
+    constructor() {
+        super('group');
     }
 
     async getAll(
@@ -23,6 +20,6 @@ export class GroupsModule extends EosRecordTargetModule<'group'> {
     }
 
     async get(targetNumber: TargetNumber): Promise<Group | null> {
-        return await this.eos.request(GroupRequest.get(targetNumber));
+        return this.getEos().request(GroupRequest.get(targetNumber));
     }
 }

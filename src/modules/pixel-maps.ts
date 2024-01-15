@@ -1,15 +1,12 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { PixelMap } from '../record-targets';
 import { PixelMapRequest } from '../requests';
-import { EosRecordTargetModule } from './eos-record-target-module';
+import { RecordTargetModule } from './record-target-module';
 
-export class PixelMapsModule extends EosRecordTargetModule<'pixmap'> {
-    constructor(eos: EosConsole) {
-        super(eos, 'pixmap');
+export class PixelMapsModule extends RecordTargetModule<'pixmap'> {
+    constructor() {
+        super('pixmap');
     }
 
     async getAll(
@@ -23,6 +20,6 @@ export class PixelMapsModule extends EosRecordTargetModule<'pixmap'> {
     }
 
     async get(targetNumber: TargetNumber): Promise<PixelMap | null> {
-        return await this.eos.request(PixelMapRequest.get(targetNumber));
+        return this.getEos().request(PixelMapRequest.get(targetNumber));
     }
 }

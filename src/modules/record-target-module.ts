@@ -1,21 +1,15 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { RecordTargetType, RecordTargets } from '../record-targets';
 import { EosRecordTargetRequest } from '../requests';
 import { RecordTargetCountRequest } from '../requests/record-target-count-request';
 import { EosConsoleModule } from './eos-console-module';
 
-export abstract class EosRecordTargetModule<
+export abstract class RecordTargetModule<
     TTargetType extends Exclude<RecordTargetType, 'cue'>,
 > extends EosConsoleModule {
-    constructor(
-        eos: EosConsole,
-        private readonly targetType: TTargetType,
-    ) {
-        super(eos);
+    constructor(protected readonly targetType: TTargetType) {
+        super();
     }
 
     abstract getAll(
@@ -27,7 +21,7 @@ export abstract class EosRecordTargetModule<
         targetList?: TargetNumber,
     ): Promise<RecordTargets[TTargetType] | null>;
 
-    async getRecordTargetList(
+    protected async getRecordTargetList(
         targetType: TTargetType,
         indexRequestFactory: (
             index: number,
@@ -47,7 +41,7 @@ export abstract class EosRecordTargetModule<
         >(total);
 
         for (let i = 0; i < total; i++) {
-            requestPromises[i] = this.eos
+            requestPromises[i] = this.getEos()
                 .request(indexRequestFactory(i))
                 .then(recordTarget => {
                     completedCount += 1;
@@ -69,7 +63,7 @@ export abstract class EosRecordTargetModule<
     }
 
     private async getCount(): Promise<number> {
-        return await this.eos.request(
+        return this.getEos().request(
             new RecordTargetCountRequest(this.targetType),
         );
     }

@@ -1,15 +1,12 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { Preset } from '../record-targets';
 import { PresetRequest } from '../requests';
-import { EosRecordTargetModule } from './eos-record-target-module';
+import { RecordTargetModule } from './record-target-module';
 
-export class PresetsModule extends EosRecordTargetModule<'preset'> {
-    constructor(eos: EosConsole) {
-        super(eos, 'preset');
+export class PresetsModule extends RecordTargetModule<'preset'> {
+    constructor() {
+        super('preset');
     }
 
     async getAll(
@@ -23,6 +20,6 @@ export class PresetsModule extends EosRecordTargetModule<'preset'> {
     }
 
     async get(targetNumber: TargetNumber): Promise<Preset | null> {
-        return await this.eos.request(PresetRequest.get(targetNumber));
+        return this.getEos().request(PresetRequest.get(targetNumber));
     }
 }

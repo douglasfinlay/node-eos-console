@@ -6,7 +6,7 @@ import { EosConsoleModule } from './eos-console-module';
 
 export class CuesModule extends EosConsoleModule {
     async fire(cueListNumber: TargetNumber, cueNumber: TargetNumber) {
-        await this.eos.sendMessage(
+        await this.getEos().sendMessage(
             `/eos/cue/${cueListNumber}/${cueNumber}/fire`,
         );
     }
@@ -15,7 +15,7 @@ export class CuesModule extends EosConsoleModule {
         cueList: TargetNumber,
         progressCallback?: GetRecordTargetListProgressCallback,
     ): Promise<Cue[]> {
-        const total = await this.eos.request(
+        const total = await this.getEos().request(
             new RecordTargetCountRequest('cue', cueList),
         );
 
@@ -28,7 +28,7 @@ export class CuesModule extends EosConsoleModule {
         const cueRequests = new Array<Promise<Cue | null>>(total);
 
         for (let i = 0; i < total; i++) {
-            cueRequests[i] = this.eos
+            cueRequests[i] = this.getEos()
                 .request(CueRequest.index(i, cueList))
                 .then(cue => {
                     completedCount += 1;
@@ -53,6 +53,6 @@ export class CuesModule extends EosConsoleModule {
         cueList: TargetNumber,
         targetNumber: TargetNumber,
     ): Promise<Cue | null> {
-        return await this.eos.request(CueRequest.get(targetNumber, cueList));
+        return this.getEos().request(CueRequest.get(targetNumber, cueList));
     }
 }

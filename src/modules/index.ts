@@ -1,3 +1,5 @@
+export { EosConsoleModuleContext } from './eos-console-module';
+
 export * from './channels';
 export * from './cue-lists';
 export * from './cues';

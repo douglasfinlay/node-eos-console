@@ -14,6 +14,7 @@
     "rules": {
         "no-console": "error",
         "prettier/prettier": "error",
-        "@typescript-eslint/no-unused-vars": "warn"
+        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/return-await": "error"
     }
 }

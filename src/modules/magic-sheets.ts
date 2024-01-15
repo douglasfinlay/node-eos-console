@@ -1,15 +1,12 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { MagicSheet } from '../record-targets';
 import { MagicSheetRequest } from '../requests';
-import { EosRecordTargetModule } from './eos-record-target-module';
+import { RecordTargetModule } from './record-target-module';
 
-export class MagicSheetsModule extends EosRecordTargetModule<'ms'> {
-    constructor(eos: EosConsole) {
-        super(eos, 'ms');
+export class MagicSheetsModule extends RecordTargetModule<'ms'> {
+    constructor() {
+        super('ms');
     }
 
     async getAll(
@@ -23,6 +20,6 @@ export class MagicSheetsModule extends EosRecordTargetModule<'ms'> {
     }
 
     async get(targetNumber: TargetNumber): Promise<MagicSheet | null> {
-        return await this.eos.request(MagicSheetRequest.get(targetNumber));
+        return this.getEos().request(MagicSheetRequest.get(targetNumber));
     }
 }

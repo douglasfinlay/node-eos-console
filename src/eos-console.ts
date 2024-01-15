@@ -38,6 +38,45 @@ export type GetRecordTargetListProgressCallback = (
 ) => void;
 
 export class EosConsole extends EventEmitter<EosConsoleEvents> {
+    readonly host: string;
+    readonly port: number;
+
+    readonly beamPalettes = new modules.PalettesModule('bp');
+    readonly channels = new modules.ChannelsModule();
+    readonly colorPalettes = new modules.PalettesModule('cp');
+    readonly cueLists = new modules.CueListsModule();
+    readonly cues = new modules.CuesModule();
+    readonly curves = new modules.CurvesModule();
+    readonly effects = new modules.EffectsModule();
+    readonly focusPalettes = new modules.PalettesModule('fp');
+    readonly groups = new modules.GroupsModule();
+    readonly intensityPalettes = new modules.PalettesModule('ip');
+    readonly macros = new modules.MacrosModule();
+    readonly magicSheets = new modules.MagicSheetsModule();
+    readonly pixelMaps = new modules.PixelMapsModule();
+    readonly presets = new modules.PresetsModule();
+    readonly snapshots = new modules.SnapshotsModule();
+    readonly subs = new modules.SubsModule();
+
+    private readonly allModules = [
+        this.beamPalettes,
+        this.channels,
+        this.colorPalettes,
+        this.cueLists,
+        this.cues,
+        this.curves,
+        this.effects,
+        this.focusPalettes,
+        this.groups,
+        this.intensityPalettes,
+        this.macros,
+        this.magicSheets,
+        this.pixelMaps,
+        this.presets,
+        this.snapshots,
+        this.subs,
+    ];
+
     private _connectionState: EosConnectionState = 'disconnected';
     private log?: LogHandler;
     private requestManager = new RequestManager();
@@ -58,26 +97,6 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private _showName?: string;
     private _softKeys?: string[];
     private _version?: string;
-
-    readonly host: string;
-    readonly port: number;
-
-    readonly beamPalettes = new modules.PalettesModule(this, 'bp');
-    readonly channels = new modules.ChannelsModule(this);
-    readonly colorPalettes = new modules.PalettesModule(this, 'cp');
-    readonly cueLists = new modules.CueListsModule(this);
-    readonly cues = new modules.CuesModule(this);
-    readonly curves = new modules.CurvesModule(this);
-    readonly effects = new modules.PresetsModule(this);
-    readonly focusPalettes = new modules.PalettesModule(this, 'fp');
-    readonly groups = new modules.GroupsModule(this);
-    readonly intensityPalettes = new modules.PalettesModule(this, 'ip');
-    readonly macros = new modules.MacrosModule(this);
-    readonly magicSheets = new modules.MagicSheetsModule(this);
-    readonly pixelMaps = new modules.PixelMapsModule(this);
-    readonly presets = new modules.PresetsModule(this);
-    readonly snapshots = new modules.SnapshotsModule(this);
-    readonly subs = new modules.SubsModule(this);
 
     get activeChannels() {
         return this._activeChannels;
@@ -210,6 +229,8 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
                         this._version = version;
                         this.log?.('info', `Eos version ${version}`);
 
+                        this.initModules(version);
+
                         return this.subscribe();
                     })
                     .then(resolve)
@@ -280,6 +301,8 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     }
 
     private clearState() {
+        this.destroyModules();
+
         this._activeChannels = undefined;
         this._activeCue = undefined;
         this._activeWheels = undefined;
@@ -359,6 +382,24 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         }
     }
 
+    private initModules(eosVersion: string) {
+        const moduleContext: modules.EosConsoleModuleContext = {
+            version: eosVersion,
+            request: this.request.bind(this),
+            sendMessage: this.sendMessage.bind(this),
+        };
+
+        for (const module of this.allModules) {
+            module.init(moduleContext);
+        }
+    }
+
+    private destroyModules() {
+        for (const module of this.allModules) {
+            module.destroy();
+        }
+    }
+
     private initRoutes() {
         this.log?.('debug', 'Initialising OSC routes');
 
@@ -407,10 +448,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         ]);
     }
 
-    /**
-     * @internal
-     */
-    async request<T>(request: requests.Request<T>): Promise<T> {
+    private async request<T>(request: requests.Request<T>): Promise<T> {
         const response = this.requestManager.register(request);
 
         await this.socket?.writeOsc(request.outboundMessage);

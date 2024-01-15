@@ -1,15 +1,12 @@
-import {
-    EosConsole,
-    GetRecordTargetListProgressCallback,
-} from '../eos-console';
+import { GetRecordTargetListProgressCallback } from '../eos-console';
 import { TargetNumber } from '../eos-types';
 import { Macro } from '../record-targets';
 import { MacroRequest } from '../requests';
-import { EosRecordTargetModule } from './eos-record-target-module';
+import { RecordTargetModule } from './record-target-module';
 
-export class MacrosModule extends EosRecordTargetModule<'macro'> {
-    constructor(eos: EosConsole) {
-        super(eos, 'macro');
+export class MacrosModule extends RecordTargetModule<'macro'> {
+    constructor() {
+        super('macro');
     }
 
     async getAll(
@@ -23,6 +20,6 @@ export class MacrosModule extends EosRecordTargetModule<'macro'> {
     }
 
     async get(targetNumber: TargetNumber): Promise<Macro | null> {
-        return await this.eos.request(MacroRequest.get(targetNumber));
+        return this.getEos().request(MacroRequest.get(targetNumber));
     }
 }
