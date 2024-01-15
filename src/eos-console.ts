@@ -42,7 +42,6 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     readonly port: number;
 
     readonly beamPalettes = new modules.PalettesModule('bp');
-    readonly channels = new modules.ChannelsModule();
     readonly colorPalettes = new modules.PalettesModule('cp');
     readonly cueLists = new modules.CueListsModule();
     readonly cues = new modules.CuesModule();
@@ -53,6 +52,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     readonly intensityPalettes = new modules.PalettesModule('ip');
     readonly macros = new modules.MacrosModule();
     readonly magicSheets = new modules.MagicSheetsModule();
+    readonly patch = new modules.ChannelsModule();
     readonly pixelMaps = new modules.PixelMapsModule();
     readonly presets = new modules.PresetsModule();
     readonly snapshots = new modules.SnapshotsModule();
@@ -60,7 +60,6 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
 
     private readonly allModules = [
         this.beamPalettes,
-        this.channels,
         this.colorPalettes,
         this.cueLists,
         this.cues,
@@ -71,6 +70,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         this.intensityPalettes,
         this.macros,
         this.magicSheets,
+        this.patch,
         this.pixelMaps,
         this.presets,
         this.snapshots,
