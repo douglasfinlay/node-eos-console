@@ -3,7 +3,7 @@
   consoles, written in TypeScript</p>
 </div>
 
-> **Warning**  
+> **Warning**
 > This project is under active development and is not feature complete
 
 ## Design Goals
@@ -49,17 +49,38 @@ await eos.disconnect();
 
 ### Retrieving Show Data
 
+Record targets are accessed through dedicated modules. The following target types are
+supported:
+
+- `beamPalettes`
+- `colorPalettes`
+- `cueLists`
+- `cues`
+- `curves`
+- `effects`
+- `focusPalettes`
+- `groups`
+- `intensityPalettes`
+- `macros`
+- `magicSheets`
+- `patch`
+- `pixelMaps`
+- `presets`
+- `snapshots`
+- `subs`
+
 ```ts
-const swVersion = eos.getVersion();
-const groups = await eos.getGroups();
-const cue = await eos.getCue(1, 0.5);
+const cue = await eos.cues.get(1, 0.5);
+
+const channels = await eos.patch.getAll();
+const groups = await eos.groups.getAll();
 ```
 
 ### Executing Commands
 
 ```ts
 await eos.changeUser(5);
-await eos.fireCue(3, 1.4);
+await eos.cues.fire(3, 1.4);
 await eos.executeCommand('Chan 1 Frame Thrust A 50 Frame Angle A -30');
 await eos.executeCommand('Cue 2 Label %1 Enter', ['Command with substitutions']);
 ```
@@ -69,7 +90,7 @@ await eos.executeCommand('Cue 2 Label %1 Enter', ['Command with substitutions'])
 #### Implicit Output
 
 ```ts
-eos.on('user-cmd', (userId, cmd) => 
+eos.on('user-cmd', (userId, cmd) =>
     console.log(`User ${userId}: ${cmd}`)
 });
 
@@ -92,11 +113,6 @@ const eos = new EosConsole({
     logging: (level, message) => console.log(`[${level}] ${message}`),
 });
 ```
-
-## To Do
-
-- [ ] Documentation
-- [ ] Settle on an event naming convention for implicit output
 
 ## License
 
