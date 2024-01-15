@@ -4,6 +4,7 @@ import { RecordTargetType, RecordTargets } from '../record-targets';
 import { EosRecordTargetRequest } from '../requests';
 import { RecordTargetCountRequest } from '../requests/record-target-count-request';
 import { EosConsoleModule } from './eos-console-module';
+import { assertNonNullArray } from './utils';
 
 export abstract class RecordTargetModule<
     TTargetType extends Exclude<RecordTargetType, 'cue'>,
@@ -53,13 +54,12 @@ export abstract class RecordTargetModule<
 
         const recordTargets = await Promise.all(requestPromises);
 
-        if (recordTargets.includes(null)) {
-            throw new Error(
-                `null record target found when requesting record target list "${targetType}"`,
-            );
-        }
+        assertNonNullArray(
+            recordTargets,
+            `null record target found when requesting record target list "${targetType}"`,
+        );
 
-        return recordTargets as RecordTargets[TTargetType][];
+        return recordTargets;
     }
 
     private async getCount(): Promise<number> {

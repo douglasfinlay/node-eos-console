@@ -7,6 +7,7 @@ import {
     EosConsoleModuleContext,
 } from './eos-console-module';
 import { RecordTargetModule } from './record-target-module';
+import { assertNonNullArray } from './utils';
 
 export class ChannelsModule extends EosConsoleModule {
     private patchModule = new PatchModule();
@@ -60,16 +61,12 @@ export class ChannelsModule extends EosConsoleModule {
 
         const remainingParts = await Promise.all(remainingPartRequests);
 
-        if (remainingParts.includes(null)) {
-            throw new Error(
-                `null part found when requesting channel ${targetNumber}`,
-            );
-        }
+        assertNonNullArray(
+            remainingParts,
+            `null part found when requesting channel ${targetNumber}`,
+        );
 
-        return transformPatchToChannel([
-            firstPart,
-            ...(remainingParts as Patch[]),
-        ]);
+        return transformPatchToChannel([firstPart, ...remainingParts]);
     }
 }
 

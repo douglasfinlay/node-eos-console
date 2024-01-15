@@ -3,6 +3,7 @@ import { TargetNumber } from '../eos-types';
 import { Cue } from '../record-targets';
 import { CueRequest, RecordTargetCountRequest } from '../requests';
 import { EosConsoleModule } from './eos-console-module';
+import { assertNonNullArray } from './utils';
 
 export class CuesModule extends EosConsoleModule {
     async fire(cueListNumber: TargetNumber, cueNumber: TargetNumber) {
@@ -40,13 +41,12 @@ export class CuesModule extends EosConsoleModule {
 
         const cues = await Promise.all(cueRequests);
 
-        if (cues.includes(null)) {
-            throw new Error(
-                'null record target found when requesting record target list "cue"',
-            );
-        }
+        assertNonNullArray(
+            cues,
+            'null record target found when requesting record target list "cue"',
+        );
 
-        return cues as Cue[];
+        return cues;
     }
 
     async get(
