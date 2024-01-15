@@ -1,4 +1,4 @@
-export * from './discovery';
+export * from './etc-discovery';
 export * from './eos-console';
 
 export type * from './eos-types';

@@ -1,7 +1,6 @@
+import { EventEmitter } from 'eventemitter3';
 import * as udp from 'node:dgram';
-import { EventEmitter } from 'node:events';
 import * as os from 'node:os';
-
 import * as osc from 'osc-min';
 import { OscArgument, OscMessage } from './osc';
 
@@ -30,7 +29,7 @@ export interface EtcDiscoveryOptions {
     serviceName?: string;
 }
 
-export class EtcDiscovery extends EventEmitter {
+export class EtcDiscovery extends EventEmitter<EtcDiscoveryEvents> {
     private devicesLastSeen = new Map<string, number>();
     private discoveredDevices = new Map<string, EtcDiscoveredDevice>();
     private requestMessage: Uint8Array | null = null;
@@ -225,6 +224,12 @@ export class EtcDiscovery extends EventEmitter {
             }
         }
     }
+}
+
+interface EtcDiscoveryEvents {
+    error: (err: Error) => void;
+    found: (device: EtcDiscoveredDevice) => void;
+    lost: (device: EtcDiscoveredDevice) => void;
 }
 
 const calculateBroadcastAddr = (addr: string, netmask: string) => {
