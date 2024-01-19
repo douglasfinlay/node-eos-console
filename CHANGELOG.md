@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Current]
+
+### Changes
+
+- Create modules for managing cue list banks and fader banks
+- Most show data is now accessed via dedicated modules; for example,
+`eos.getMacros()` has become `eos.macros.getAll()`)
+- Throw an error if attempting to interact with the console when not connected
+- Remove redundant `connectError` event from `EosConsole`
+- Strongly type `EosConsole` and `EtcDiscovery` events
+
 ## [0.3.1] - 2023-12-21
 
 ### Changes
