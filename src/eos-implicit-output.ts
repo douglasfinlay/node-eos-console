@@ -35,7 +35,10 @@ export type EosImplicitOutput =
     | EosWheelModeOutput
     | EosMacroEvent
     | EosSubEvent
-    | EosRelayEvent;
+    | EosRelayEvent
+    | EosCueListBank
+    | EosCueListBankCue
+    | EosCueListBankReset;
 
 interface EosUserOutput {
     event: 'user';
@@ -158,6 +161,32 @@ interface EosRelayEvent {
     active: boolean;
 }
 
+interface EosCueListBank {
+    event: 'cue-list-bank';
+    cueListBank: number;
+    itemCount: number;
+    label: string;
+}
+
+interface EosCueListBankCue {
+    event: 'cue-list-bank-item';
+    cueListBank: number;
+    itemIndex: number;
+    item: {
+        cueIdentifier: string;
+        durationMs: number;
+        label: string;
+        scene: string;
+        sceneEnd: boolean;
+        timeRemainingMs: number | null;
+    } | null;
+}
+
+interface EosCueListBankReset {
+    event: 'cue-list-bank-reset';
+    cueListBank: number;
+}
+
 const STATE_LOOKUP: Record<number, EosState> = {
     0: 'blind',
     1: 'live',
@@ -178,7 +207,7 @@ const WHEEL_MODE_LOOKUP: Record<number, EosWheelMode> = {
 };
 
 type ImplicitOutputHandler<
-    Address extends `/eos/out/${string}`,
+    Address extends `/eos/${string}`,
     Output extends EosImplicitOutput,
 > = (message: OscMessage, params: OscRouteParamMap<Address>) => Output;
 
@@ -219,6 +248,13 @@ interface ImplicitOutputTypeMap {
     '/eos/out/previous/cue': EosNullableCueOutput;
     '/eos/out/previous/cue/{cueList}/{cueNumber}': EosNullableCueOutput;
     '/eos/out/previous/cue/text': EosCueTextOutput;
+
+    //
+    // Cue List Banks
+    //
+    '/eos/cuelist/{cueListBank}/reset': EosCueListBankReset;
+    '/eos/out/cuelist/{cueListBank}': EosCueListBank;
+    '/eos/out/cuelist/{cueListBank}/{cueIndex}': EosCueListBankCue;
 
     //
     // TODO: Direct Select Banks
@@ -437,6 +473,46 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
         event: 'previous-cue-text',
         text: message.args[0].getString(),
     }),
+
+    //
+    // Cue List Banks
+    //
+    '/eos/cuelist/{cueListBank}/reset': (_, params) => ({
+        event: 'cue-list-bank-reset',
+        cueListBank: Number(params.cueListBank),
+    }),
+
+    '/eos/out/cuelist/{cueListBank}': (message, params) => ({
+        event: 'cue-list-bank',
+        cueListBank: Number(params.cueListBank),
+        itemCount: message.args[1].getInteger(),
+        label: message.args[0].getString(),
+    }),
+
+    '/eos/out/cuelist/{cueListBank}/{cueIndex}': (message, params) => {
+        const result: EosCueListBankCue = {
+            event: 'cue-list-bank-item',
+            cueListBank: Number(params.cueListBank),
+            item: null,
+            itemIndex: Number(params.cueIndex),
+        };
+
+        const cueText = message.args[0].getString();
+
+        if (cueText) {
+            result.item = {
+                // TODO: parse into cue + cue part?
+                cueIdentifier: message.args[1].getString(),
+                label: message.args[2].getString(),
+                scene: message.args[4].getString(),
+                sceneEnd: message.args[5].getBoolean(),
+                durationMs: message.args[6].getInteger(),
+                timeRemainingMs: message.args[7].getOptionalInteger(),
+            };
+        }
+
+        return result;
+    },
 
     //
     // TODO: Direct Select Banks

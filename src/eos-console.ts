@@ -43,6 +43,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
 
     readonly beamPalettes = new modules.PalettesModule('bp');
     readonly colorPalettes = new modules.PalettesModule('cp');
+    readonly cueListBanks = new modules.CueListBanksModule();
     readonly cueLists = new modules.CueListsModule();
     readonly cues = new modules.CuesModule();
     readonly curves = new modules.CurvesModule();
@@ -61,6 +62,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private readonly allModules = [
         this.beamPalettes,
         this.colorPalettes,
+        this.cueListBanks,
         this.cueLists,
         this.cues,
         this.curves,
