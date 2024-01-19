@@ -36,6 +36,10 @@ export type EosImplicitOutput =
     | EosMacroEvent
     | EosSubEvent
     | EosRelayEvent
+    | EosFaderBankLabel
+    | EosFaderLabel
+    | EosFaderRange
+    | EosFaderPercent
     | EosCueListBank
     | EosCueListBankCue
     | EosCueListBankReset;
@@ -161,6 +165,34 @@ interface EosRelayEvent {
     active: boolean;
 }
 
+interface EosFaderBankLabel {
+    event: 'fader-bank-label';
+    faderBank: number;
+    label: string;
+}
+
+interface EosFaderLabel {
+    event: 'fader-label';
+    fader: number;
+    faderBank: number;
+    label: string;
+}
+
+interface EosFaderRange {
+    event: 'fader-range';
+    fader: number;
+    faderBank: number;
+    max: number;
+    min: number;
+}
+
+interface EosFaderPercent {
+    event: 'fader-level';
+    fader: number;
+    faderBank: number;
+    percent: number;
+}
+
 interface EosCueListBank {
     event: 'cue-list-bank';
     cueListBank: number;
@@ -261,8 +293,12 @@ interface ImplicitOutputTypeMap {
     //
 
     //
-    // TODO: Fader Banks
+    // Fader Banks
     //
+    '/eos/fader/{faderBank}/{fader}': EosFaderPercent;
+    '/eos/out/fader/range/{faderBank}/{fader}': EosFaderRange;
+    '/eos/out/fader/{faderBank}': EosFaderBankLabel;
+    '/eos/out/fader/{faderBank}/{fader}/name': EosFaderLabel;
 
     //
     // Show Control Events
@@ -519,8 +555,35 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     //
 
     //
-    // TODO: Fader Banks
+    // Fader Banks
     //
+    '/eos/fader/{faderBank}/{fader}': (message, params) => ({
+        event: 'fader-level',
+        fader: Number(params.fader),
+        faderBank: Number(params.faderBank),
+        percent: message.args[0].getFloat(),
+    }),
+
+    '/eos/out/fader/{faderBank}': (message, params) => ({
+        event: 'fader-bank-label',
+        faderBank: Number(params.faderBank),
+        label: message.args[0].getString(),
+    }),
+
+    '/eos/out/fader/{faderBank}/{fader}/name': (message, params) => ({
+        event: 'fader-label',
+        fader: Number(params.fader),
+        faderBank: Number(params.faderBank),
+        label: message.args[0].getString(),
+    }),
+
+    '/eos/out/fader/range/{faderBank}/{fader}': (message, params) => ({
+        event: 'fader-range',
+        fader: Number(params.fader),
+        faderBank: Number(params.faderBank),
+        max: message.args[1].getInteger(),
+        min: message.args[0].getInteger(),
+    }),
 
     //
     // Show Control Events

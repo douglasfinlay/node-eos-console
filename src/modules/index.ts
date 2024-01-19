@@ -6,6 +6,7 @@ export * from './cue-lists';
 export * from './cues';
 export * from './curves';
 export * from './effects';
+export * from './fader-banks';
 export * from './groups';
 export * from './macros';
 export * from './magic-sheets';
