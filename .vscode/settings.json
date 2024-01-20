@@ -3,5 +3,13 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true
     },
-    "cSpell.words": ["3dserver", "cuelist", "newcmd", "timecode"]
+    "cSpell.words": [
+        "3dserver",
+        "cuelist",
+        "flexi",
+        "newcmd",
+        "pantilt",
+        "softkey",
+        "timecode"
+    ]
 }

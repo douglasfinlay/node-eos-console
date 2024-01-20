@@ -177,30 +177,30 @@ export class EtcDiscovery extends EventEmitter<EtcDiscoveryEvents> {
             throw new Error('socket is not initialised');
         }
 
-        const ifaces = os.networkInterfaces(),
-            broadcastAddrs: string[] = [];
+        const networkInterfaces = os.networkInterfaces(),
+            broadcastAddresses: string[] = [];
 
-        for (const addrs of Object.values(ifaces)) {
-            if (!addrs) {
+        for (const addresses of Object.values(networkInterfaces)) {
+            if (!addresses) {
                 continue;
             }
 
-            for (const iface of addrs) {
-                if (iface.internal || iface.family !== 'IPv4') {
+            for (const address of addresses) {
+                if (address.internal || address.family !== 'IPv4') {
                     continue;
                 }
 
                 const broadcastAddr = calculateBroadcastAddr(
-                    iface.address,
-                    iface.netmask,
+                    address.address,
+                    address.netmask,
                 );
 
-                broadcastAddrs.push(broadcastAddr);
+                broadcastAddresses.push(broadcastAddr);
             }
         }
 
-        for (const addr of broadcastAddrs) {
-            this.socket.send(this.requestMessage, 3034, addr, err => {
+        for (const address of broadcastAddresses) {
+            this.socket.send(this.requestMessage, 3034, address, err => {
                 if (err) {
                     this.emit('error', err);
                 }
