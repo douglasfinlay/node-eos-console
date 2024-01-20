@@ -71,7 +71,7 @@ await eos.changeUser(1);
 
 #### Creating OSC Banks
 
-Cue list banks and fader banks are created using the `cueListBanks` and
+OSC banks are created using the `cueListBanks`, `directSelectsBanks`, and
 `faderBanks` modules.
 
 ```ts
@@ -80,6 +80,12 @@ await eos.cueListBanks.create(1, {
     cueList: 1,
     pendingCueCount: 10,
     prevCueCount: 3
+});
+
+// Create direct selects banks 1 showing 10 colour palettes
+await eos.directSelectsBanks.create(1, {
+    buttonCount: 10,
+    targetType: 'cp'
 });
 
 // Create fader bank 1 showing 10 faders on its second page

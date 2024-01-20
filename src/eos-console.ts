@@ -47,6 +47,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     readonly cueLists = new modules.CueListsModule();
     readonly cues = new modules.CuesModule();
     readonly curves = new modules.CurvesModule();
+    readonly directSelectsBanks = new modules.DirectSelectsBanksModule();
     readonly effects = new modules.EffectsModule();
     readonly faderBanks = new modules.FaderBanksModule();
     readonly focusPalettes = new modules.PalettesModule('fp');
@@ -67,6 +68,7 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         this.cueLists,
         this.cues,
         this.curves,
+        this.directSelectsBanks,
         this.effects,
         this.faderBanks,
         this.focusPalettes,

@@ -1,3 +1,5 @@
+// TODO: implicit output handlers should be defined in (and mounted by) their corresponding modules where possible
+
 import {
     EosColorHueSat,
     EosCueIdentifier,
@@ -42,7 +44,9 @@ export type EosImplicitOutput =
     | EosFaderPercent
     | EosCueListBank
     | EosCueListBankCue
-    | EosCueListBankReset;
+    | EosCueListBankReset
+    | EosDirectSelectBank
+    | EosDirectSelectBankButton;
 
 interface EosUserOutput {
     event: 'user';
@@ -219,6 +223,20 @@ interface EosCueListBankReset {
     cueListBank: number;
 }
 
+interface EosDirectSelectBank {
+    event: 'direct-select-bank';
+    directSelectBank: number;
+    label: string;
+}
+
+interface EosDirectSelectBankButton {
+    event: 'direct-select-bank-button';
+    directSelectBank: number;
+    buttonIndex: number;
+    label: string;
+    targetNumber: TargetNumber;
+}
+
 const STATE_LOOKUP: Record<number, EosState> = {
     0: 'blind',
     1: 'live',
@@ -289,8 +307,10 @@ interface ImplicitOutputTypeMap {
     '/eos/out/cuelist/{cueListBank}/{cueIndex}': EosCueListBankCue;
 
     //
-    // TODO: Direct Select Banks
+    // Direct Select Banks
     //
+    '/eos/out/ds/{directSelectBank}': EosDirectSelectBank;
+    '/eos/out/ds/{directSelectBank}/{buttonIndex}': EosDirectSelectBankButton;
 
     //
     // Fader Banks
@@ -551,8 +571,21 @@ export const EOS_IMPLICIT_OUTPUT: ImplicitOutput = {
     },
 
     //
-    // TODO: Direct Select Banks
+    // Direct Select Banks
     //
+    '/eos/out/ds/{directSelectBank}': (message, params) => ({
+        event: 'direct-select-bank',
+        directSelectBank: Number(params.directSelectBank),
+        label: message.args[0].getString(),
+    }),
+
+    '/eos/out/ds/{directSelectBank}/{buttonIndex}': (message, params) => ({
+        event: 'direct-select-bank-button',
+        buttonIndex: Number(params.buttonIndex),
+        directSelectBank: Number(params.directSelectBank),
+        label: message.args[0].getString(),
+        targetNumber: message.args[1].getTargetNumber(),
+    }),
 
     //
     // Fader Banks

@@ -5,6 +5,7 @@ export * from './cue-list-banks';
 export * from './cue-lists';
 export * from './cues';
 export * from './curves';
+export * from './direct-selects-banks';
 export * from './effects';
 export * from './fader-banks';
 export * from './groups';
