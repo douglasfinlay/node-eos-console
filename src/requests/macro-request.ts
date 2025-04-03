@@ -15,10 +15,6 @@ export class MacroRequest extends RecordTargetRequest<Macro> {
         return new MacroRequest(`/eos/get/macro/${targetNumber}`, 2);
     }
 
-    static fire(targetNumber: TargetNumber) {
-        return new MacroRequest(`/eos/macro/${targetNumber}/fire`);
-    }
-
     protected override unpack(messages: OscMessage[]): Macro {
         return {
             targetType: 'macro',
