@@ -24,6 +24,6 @@ export class MacrosModule extends RecordTargetModule<'macro'> {
     }
 
     async fire(targetNumber: TargetNumber): Promise<void> {
-        await this.getEos().sendMessage(`/eos/macros/${targetNumber}/fire`);
+        await this.getEos().sendMessage(`/eos/macro/${targetNumber}/fire`);
     }
 }
