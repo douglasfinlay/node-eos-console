@@ -37,28 +37,150 @@ export type GetRecordTargetListProgressCallback = (
     total: number,
 ) => void;
 
+/**
+ * Manages a connection to an ETC Eos-family lighting console.
+ *
+ *
+ * ### Modules
+ *
+ * Each property named after a record target (e.g. `cues`, `groups`, `macros`)
+ * exposes a module for interacting with that target type.
+ *
+ *
+ * ### Connection Events
+ *
+ * | Name         | Description                                     |
+ * |--------------|-------------------------------------------------|
+ * | `connect`    | Emitted when the console successfully connects. |
+ * | `connecting` | Emitted when a connection attempt begins.       |
+ * | `disconnect` | Emitted when the connection is closed or lost.  |
+ *
+ *
+ * ### Console Events
+ *
+ * | Name                   | Description                                     | Parameters                                                                 |
+ * |------------------------|-------------------------------------------------|----------------------------------------------------------------------------|
+ * | `active-channel`       | Active channel selection has changed.           | `channels: TargetNumber[]`                                                 |
+ * | `active-cue`           | Active cue has changed.                         | `cue: EosCueIdentifier`                                                    |
+ * | `active-wheel`         | Encoder wheel has changed.                      | `index: number`, `wheel: EosWheel \| null`                                 |
+ * | `cmd`                  | Command line has changed.                       | `commandLine: string`                                                      |
+ * | `color-hs`             | Hue/saturation color has changed.               | `color: EosColorHueSat`                                                    |
+ * | `focus-pan-tilt`       | Pan/tilt focus has changed.                     | `focus: EosFocusPanTilt`                                                   |
+ * | `focus-xyz`            | XYZ focus has changed.                          | `focus: EosFocusXYZ`                                                       |
+ * | `locked`               | Console lock state has changed.                 | `locked: boolean`                                                          |
+ * | `osc`                  | Unhandled OSC message received.                 | `message: OscMessage`                                                      |
+ * | `pending-cue`          | Pending cue has changed.                        | `cue: EosCueIdentifier`                                                    |
+ * | `previous-cue`         | Previous cue has changed.                       | `cue: EosCueIdentifier`                                                    |
+ * | `record-target-change` | A record target (e.g., cue, group) has changed. | `targetType: RecordTargetType`, `targetNumbers: TargetNumber[]`, `extraArgs: unknown[]` |
+ * | `show-name`            | Loaded show name has changed.                   | `showName: string`                                                         |
+ * | `soft-key`             | Soft key label has changed.                     | `index: number`, `label: string`                                           |
+ * | `state`                | Full console state has been updated.            | `state: EosState`                                                          |
+ *
+ */
 export class EosConsole extends EventEmitter<EosConsoleEvents> {
+    /**
+     * @category Connection
+     */
     readonly host: string;
+    /**
+     * @category Connection
+     */
     readonly port: number;
 
+    /**
+     * Provides access to beam palettes.
+     * @category Record Targets
+     */
     readonly beamPalettes = new modules.PalettesModule('bp');
+    /**
+     * Provides access to color palettes.
+     * @category Record Targets
+     */
     readonly colorPalettes = new modules.PalettesModule('cp');
+    /**
+     * Provides access to cue list banks.
+     * @category Record Target Banks
+     */
     readonly cueListBanks = new modules.CueListBanksModule();
+    /**
+     * Provides access to cue lists.
+     * @category Record Targets
+     */
     readonly cueLists = new modules.CueListsModule();
+    /**
+     * Provides access to cues.
+     * @category Record Targets
+     */
     readonly cues = new modules.CuesModule();
+    /**
+     * Provides access to curves.
+     * @category Record Targets
+     */
     readonly curves = new modules.CurvesModule();
+    /**
+     * Provides access to direct selects banks.
+     * @category Record Target Banks
+     */
     readonly directSelectsBanks = new modules.DirectSelectsBanksModule();
+    /**
+     * Provides access to effects.
+     * @category Record Targets
+     */
     readonly effects = new modules.EffectsModule();
+    /**
+     * Provides access to fader banks.
+     * @category Record Target Banks
+     */
     readonly faderBanks = new modules.FaderBanksModule();
+    /**
+     * Provides access to focus palettes.
+     * @category Record Targets
+     */
     readonly focusPalettes = new modules.PalettesModule('fp');
+    /**
+     * Provides access to groups.
+     * @category Record Targets
+     */
     readonly groups = new modules.GroupsModule();
+    /**
+     * Provides access to intensity palettes.
+     * @category Record Targets
+     */
     readonly intensityPalettes = new modules.PalettesModule('ip');
+    /**
+     * Provides access to macros.
+     * @category Record Targets
+     */
     readonly macros = new modules.MacrosModule();
+    /**
+     * Provides access to magic sheets.
+     * @category Record Targets
+     */
     readonly magicSheets = new modules.MagicSheetsModule();
+    /**
+     * Provides access to the patch (channels).
+     * @category Record Targets
+     */
     readonly patch = new modules.ChannelsModule();
+    /**
+     * Provides access to pixel maps.
+     * @category Record Targets
+     */
     readonly pixelMaps = new modules.PixelMapsModule();
+    /**
+     * Provides access to presets.
+     * @category Record Targets
+     */
     readonly presets = new modules.PresetsModule();
+    /**
+     * Provides access to snapshots.
+     * @category Record Targets
+     */
     readonly snapshots = new modules.SnapshotsModule();
+    /**
+     * Provides access to submasters.
+     * @category Record Targets
+     */
     readonly subs = new modules.SubsModule();
 
     private readonly allModules = [
@@ -104,66 +226,129 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
     private _softKeys?: string[];
     private _version?: string;
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get activeChannels() {
         return this._activeChannels;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get activeCueNumber() {
         return this._activeCue;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get activeWheels(): readonly (types.EosWheel | null)[] | undefined {
         return this._activeWheels;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get colorHueSat() {
         return this._colorHueSat;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get commandLine() {
         return this._commandLine;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get connectionState() {
         return this._connectionState;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get consoleState() {
         return this._consoleState;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get focusPanTilt() {
         return this._focusPanTilt;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get focusXYZ() {
         return this._focusXYZ;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get locked() {
         return this._locked;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get pendingCueNumber() {
         return this._pendingCue;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get previousCueNumber() {
         return this._previousCue;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get showName() {
         return this._showName;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get softKeys(): readonly string[] | undefined {
         return this._softKeys;
     }
 
+    /**
+     * @category Console State
+     * @remarks `undefined` unless connected to a console.
+     */
     get version() {
         return this._version;
     }
 
+    /**
+     * @todo
+     */
     constructor(options?: EosConsoleOptions) {
         super();
 
@@ -178,6 +363,20 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         this.initRoutes();
     }
 
+    /**
+     * Establises a TCP connection to the Eos-family console using OSC 1.1.
+     *
+     * @param timeout The time (in milliseconds) to wait before failing the
+     * connection attempt. Defaults to 5000.
+     * @returns A promise that resolves when the connection is successfully
+     * established.
+     *
+     * @remarks
+     * Emits the `connecting` and `connect` events.
+     * Rejects if the connection fails or times out.
+     *
+     * @category Connection
+     */
     connect(timeout = 5000) {
         this.log?.(
             'info',
@@ -252,6 +451,16 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         });
     }
 
+    /**
+     * Disconnects from the console.
+     *
+     * @remarks
+     * Emits the `disconnect` event.
+     * Cancels all pending requests, destroys the underlying TCP socket, and
+     * clears cached state.
+     *
+     * @category Connection
+     */
     disconnect() {
         this.log?.('info', 'Disconnecting from Eos console');
 
@@ -260,12 +469,29 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         this.requestManager.cancelAll(new Error('connection closed'));
     }
 
+    /**
+     * Changes the console user for the current connection.
+     *
+     * @param userId the user ID to switch to.
+     *
+     * @category Connection
+     */
     async changeUser(userId: number) {
         await this.sendMessage('/eos/user', [
             new OscArgument(userId, 'integer'),
         ]);
     }
 
+    /**
+     * Sends a command line instruction on the console. Substitutions may be
+     * used with numeric placeholders denoted by % (%1, %2, etc).
+     *
+     * @param command the command line text including placeholders if required.
+     * @param substitutions values to be substitued into numeric placeholders.
+     * @param newCommand if `true`, reset the command line first.
+     *
+     * @category Commands
+     */
     async executeCommand(
         command: string,
         substitutions: string[] = [],
@@ -275,6 +501,20 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         await this.sendMessage(address, [command, ...substitutions]);
     }
 
+    /**
+     * Sends an arbitrary OSC message to the Eos console. The address pattern
+     * must begin with `/eos/`.
+     *
+     * @remarks
+     * Requests (address patterns beginning with `/eos/get/`) will be rejected
+     * as these must be handled by the request system for state to properly be
+     * tracked.
+     *
+     * @param address the OSC address pattern.
+     * @param args positional arguments.
+     *
+     * @category Connection
+     */
     async sendMessage(address: string, args: unknown[] = []) {
         if (!address.startsWith('/eos/')) {
             throw new Error('message must start with "/eos/"');
@@ -287,6 +527,9 @@ export class EosConsole extends EventEmitter<EosConsoleEvents> {
         await this.getSocket().writeOsc(new OscMessage(address, args));
     }
 
+    /**
+     * @internal
+     */
     override emit<T extends EosConsoleEventNames>(
         event: T,
         ...args: EventEmitter.ArgumentMap<EosConsoleEvents>[Extract<
